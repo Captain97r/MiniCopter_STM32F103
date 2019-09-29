@@ -11,15 +11,15 @@ typedef struct
 {
 	uint32_t buf[ADC_BUFFER_SIZE];
 	uint16_t voltage_mult_1000;
+	uint8_t data_rdy;
 } battery_t;
 
 battery_t battery;
 static uint16_t median = 0;
-static uint32_t ADC_counter = 0;
-static uint32_t TIM_counter = 0;
+
 
 uint16_t MedianFilter(uint16_t datum);
 
-float get_battery_voltage();
+uint16_t get_battery_voltage();
 
 #endif /*__battery_H */

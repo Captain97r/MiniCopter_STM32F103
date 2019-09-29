@@ -128,14 +128,21 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	while (1)
+	{
 
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
+		if (battery.data_rdy == 1)
+		{
+			battery.data_rdy = 0;
+			uint8_t data[3] = { 0, get_battery_voltage() * 0xFF, (get_battery_voltage() >> 8) * 0xFF };
+			HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t *)data, sizeof(data), 1000);
+			uint8_t a = 0;
+		}
+	}
 
-  }
   /* USER CODE END 3 */
 
 }

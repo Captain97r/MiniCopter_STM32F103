@@ -29,8 +29,6 @@ typedef enum
 	HC06_PARITY_EVEN
 } HC06_PARITY;
 
-HAL_StatusTypeDef RX_callback(HC06_t *hc06);
-
 HAL_StatusTypeDef HC06_check(HC06_t *hc06);
 
 HAL_StatusTypeDef HC06_set_name(HC06_t *hc06);

@@ -9,7 +9,6 @@
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
 	median = MedianFilter((uint16_t)battery.buf[0]);
-	ADC_counter++;
 }
 
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
@@ -19,11 +18,11 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 		float vref = 2 * VDD_VOLTAGE * battery.buf[1] / ADC_FULL_VALUE;
 		float vbat = 2.0 * vref * median / ADC_FULL_VALUE - 0.11;
 		battery.voltage_mult_1000 = (uint16_t)(vbat * 1000);
-		TIM_counter++;
+		battery.data_rdy = 1;
 	}
 }
 
-float get_battery_voltage()
+uint16_t get_battery_voltage()
 {
 	return battery.voltage_mult_1000;
 }

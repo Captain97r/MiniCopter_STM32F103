@@ -119,29 +119,3 @@ HAL_StatusTypeDef HC06_set_baud(HC06_t *hc06, HC06_RATE baudrate)
 	return HAL_ERROR;
 }
 
-HAL_StatusTypeDef RX_callback(HC06_t *hc06)
-{
-	static uint8_t msg[255];
-	static uint8_t msgLength = 0;
-	static uint8_t rxComplete = 0;
-	if (rxComplete == 1)
-	{
-		rxComplete = 0;
-		msg_handler(msg, msgLength);
-		msgLength = 0;
-		
-		return HAL_OK;
-	}
-	msg[msgLength] = (uint8_t)(hc06->usart->Instance->DR & 0x00FF);
-	if (msg[msgLength] == '\0')
-	{
-		rxComplete = 1;
-		return HAL_OK;
-	}
-	else
-	{
-		__HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);
-		msgLength++;
-		return HAL_OK;
-	}
-}
