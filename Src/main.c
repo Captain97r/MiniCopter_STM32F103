@@ -111,10 +111,14 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM1_Init();
   MX_USART1_UART_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+	
+	
+	HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &battery.buf, ADC_BUFFER_SIZE);
 	HAL_UART_Receive_DMA(&huart1, (uint8_t *)&message.buf, MESSAGE_BUFFER_SIZE); 
 

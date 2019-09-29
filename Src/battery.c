@@ -2,19 +2,30 @@
 
 
 #define STOPPER				0
-#define MEDIAN_FILTER_SIZE	9
+#define MEDIAN_FILTER_SIZE	5
 #define ADC_FULL_VALUE		4095
 #define VDD_VOLTAGE			3.3
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
-	float vref = 2 * VDD_VOLTAGE * battery.buf[1] / ADC_FULL_VALUE;
-	float vbat = 2.0 * vref * MedianFilter((uint16_t)battery.buf[0]) / ADC_FULL_VALUE - 0.11;
+	median = MedianFilter((uint16_t)battery.buf[0]);
+	ADC_counter++;
+}
+
+void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim->Instance == TIM2 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)
+	{
+		float vref = 2 * VDD_VOLTAGE * battery.buf[1] / ADC_FULL_VALUE;
+		float vbat = 2.0 * vref * median / ADC_FULL_VALUE - 0.11;
+		battery.voltage_mult_1000 = (uint16_t)(vbat * 1000);
+		TIM_counter++;
+	}
 }
 
 float get_battery_voltage()
 {
-	return battery.voltage;
+	return battery.voltage_mult_1000;
 }
 
 

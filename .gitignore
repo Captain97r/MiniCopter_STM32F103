@@ -43,7 +43,7 @@ CodeDB/*
 startup/
 gcc_Debug.h
 gcc_Release.h
-MiniCopter.ioc
+#MiniCopter.ioc
 MiniCopter.sln
 MiniCopter.vcxproj
 MiniCopter.vcxproj.filters
