@@ -33,6 +33,7 @@ bld/
 [Oo]bj/
 [Ll]og/
 
+
 #VisualGDB stuff
 VisualGDBCache/
 CodeDB/MiniCopter-Debug-Win32/GlobalFileTable.000
