@@ -124,23 +124,28 @@ int main(void)
 
 	HAL_GPIO_WritePin(AD0_GPIO_Port, AD0_Pin, GPIO_PIN_RESET);
 	
+	uint8_t data[2] = { 1, 2 };
+	HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t *)data, sizeof(data), 1000);
+	
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
+		HAL_Delay(2000);
+		status = HAL_UART_Transmit_DMA(&huart1, (uint8_t *)data, sizeof(data));
 
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-		if (battery.data_rdy == 1)
-		{
-			battery.data_rdy = 0;
-			uint8_t data[3] = { 0, get_battery_voltage() * 0xFF, (get_battery_voltage() >> 8) * 0xFF };
-			HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t *)data, sizeof(data), 1000);
-			uint8_t a = 0;
-		}
+//		if (battery.data_rdy == 1)
+//		{
+//			battery.data_rdy = 0;
+//			uint8_t data[6] = { 0, get_battery_voltage() * 0xFF, (get_battery_voltage() >> 8) * 0xFF, 127, 127, 127 };
+//			HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t *)data, sizeof(data), 1000);
+//			uint8_t a = 0;
+//		}
 	}
 
   /* USER CODE END 3 */
