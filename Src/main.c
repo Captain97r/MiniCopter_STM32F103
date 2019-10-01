@@ -51,6 +51,8 @@
 #include "HC-06.h"
 #include "battery.h"
 #include "bt_msg_handler.h"
+#include "motor.h"
+#include "copter.h"
 
 /* USER CODE END Includes */
 
@@ -62,6 +64,8 @@
 extern battery_t battery;
 
 extern bt_message_t message;
+
+extern copter_t copter;
 
 /* USER CODE END PV */
 
@@ -124,7 +128,7 @@ int main(void)
 
 	HAL_GPIO_WritePin(AD0_GPIO_Port, AD0_Pin, GPIO_PIN_RESET);
 	
-	uint8_t data[2] = { 1, 2 };
+	uint8_t data[4] = { 1, 2, 3, 4 };
 	HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t *)data, sizeof(data), 1000);
 	
   /* USER CODE END 2 */

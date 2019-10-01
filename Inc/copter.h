@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef __copter_H
 #define __copter_H
 
@@ -30,8 +28,13 @@ typedef struct
 	motor_t lb;
 	
 	FLY_MODE mode;
-	
+	actuators_t actuator;
 } copter_t;
 
+copter_t copter;
+
+void copter_motor_init(copter_t *copter, motor_t *lf, motor_t *rf, motor_t *rb, motor_t *lb);
+
+void copter_handle_actuators();
 
 #endif /*__copter_H */
