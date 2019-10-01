@@ -19,10 +19,10 @@ void copter_handle_actuators()
 	// Oh shit, here we go again...
 }
 
-void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
-{
-	if (htim->Instance == TIM2 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)
-	{
-		copter_handle_actuators();
-	}
-}
+//void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
+//{
+//	if (htim->Instance == TIM2 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)
+//	{
+//		copter_handle_actuators();
+//	}
+//}

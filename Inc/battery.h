@@ -20,6 +20,8 @@ static uint16_t median = 0;
 
 uint16_t MedianFilter(uint16_t datum);
 
+void battery_calculate_voltage();
+
 uint16_t get_battery_voltage();
 
 #endif /*__battery_H */
