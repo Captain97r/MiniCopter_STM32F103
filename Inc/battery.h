@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef __battery_H
 #define __battery_H
 

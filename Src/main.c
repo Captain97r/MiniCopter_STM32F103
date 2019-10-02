@@ -67,6 +67,11 @@ extern bt_message_t message;
 
 extern copter_t copter;
 
+
+#define MPU9250_ADDRESS 0x68<<1  // Device address when ADO = 0
+
+#define WHO_AM_I_MPU9250 0x75
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -128,28 +133,28 @@ int main(void)
 
 	HAL_GPIO_WritePin(AD0_GPIO_Port, AD0_Pin, GPIO_PIN_RESET);
 	
-	uint8_t data[4] = { 1, 2, 3, 4 };
-	HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t *)data, sizeof(data), 1000);
-	
+	//uint8_t data[4] = { 1, 2, 3, 4 };
+	//HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t *)data, sizeof(data), 1000);
+	uint8_t d[1];
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		HAL_Delay(2000);
-		status = HAL_UART_Transmit_DMA(&huart1, (uint8_t *)data, sizeof(data));
 
   /* USER CODE END WHILE */
 
-  /* USER CODE BEGIN 3 */
-//		if (battery.data_rdy == 1)
-//		{
-//			battery.data_rdy = 0;
-//			uint8_t data[6] = { 0, get_battery_voltage() * 0xFF, (get_battery_voltage() >> 8) * 0xFF, 127, 127, 127 };
-//			HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t *)data, sizeof(data), 1000);
-//			uint8_t a = 0;
-//		}
+		//  /* USER CODE BEGIN 3 */
+		//		if (battery.data_rdy == 1)
+		//		{
+		//			battery.data_rdy = 0;
+		//			uint8_t data[6] = { 0, get_battery_voltage() * 0xFF, (get_battery_voltage() >> 8) * 0xFF };
+		//			HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t *)data, sizeof(data), 1000);
+		//			uint8_t a = 0;
+		//		}
+		HAL_StatusTypeDef status = HAL_I2C_Master_Receive(&hi2c1, (uint16_t)MPU9250_ADDRESS, (uint8_t *)d, 1, 1000);
+		int a = 0;
 	}
 
   /* USER CODE END 3 */
