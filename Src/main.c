@@ -48,6 +48,7 @@
 
 /* USER CODE BEGIN Includes */
 
+#include "MPU9250.h"
 #include "HC-06.h"
 #include "battery.h"
 #include "bt_msg_handler.h"
@@ -66,11 +67,6 @@ extern battery_t battery;
 extern bt_message_t message;
 
 extern copter_t copter;
-
-
-#define MPU9250_ADDRESS 0x68<<1  // Device address when ADO = 0
-
-#define WHO_AM_I_MPU9250 0x75
 
 /* USER CODE END PV */
 
@@ -123,9 +119,10 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
+	MPU9250_init(&hi2c1);
+	
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-	
 	
 	HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &battery.buf, ADC_BUFFER_SIZE);
@@ -133,33 +130,33 @@ int main(void)
 
 	HAL_GPIO_WritePin(AD0_GPIO_Port, AD0_Pin, GPIO_PIN_RESET);
 	
-	//uint8_t data[4] = { 1, 2, 3, 4 };
-	//HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t *)data, sizeof(data), 1000);
-	uint8_t d[1];
+	//calibrateMPU9250(NULL, NULL);
+	
+	float test[6] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+	MPU9250SelfTest(test);
+	
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-
+		//HAL_StatusTypeDef status = MPU9250_who_am_i();
+		MPU9250_read_mag();
+		
+		float x = (mpu9250.mag_data->x) * 0.15;
+		float y = (mpu9250.mag_data->y) * 0.15;
+		float z = (mpu9250.mag_data->z) * 0.15;
+		
+		uint8_t a = 0;
+		HAL_Delay(100);
   /* USER CODE END WHILE */
-
-		//  /* USER CODE BEGIN 3 */
-		//		if (battery.data_rdy == 1)
-		//		{
-		//			battery.data_rdy = 0;
-		//			uint8_t data[6] = { 0, get_battery_voltage() * 0xFF, (get_battery_voltage() >> 8) * 0xFF };
-		//			HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t *)data, sizeof(data), 1000);
-		//			uint8_t a = 0;
-		//		}
-		HAL_StatusTypeDef status = HAL_I2C_Master_Receive(&hi2c1, (uint16_t)MPU9250_ADDRESS, (uint8_t *)d, 1, 1000);
-		int a = 0;
 	}
 
   /* USER CODE END 3 */
 
 }
+
 
 /**
   * @brief System Clock Configuration
