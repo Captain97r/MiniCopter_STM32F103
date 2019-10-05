@@ -130,10 +130,13 @@ int main(void)
 
 	HAL_GPIO_WritePin(AD0_GPIO_Port, AD0_Pin, GPIO_PIN_RESET);
 	
-	//calibrateMPU9250(NULL, NULL);
+	float acc_offset[3];
+	float gyr_offset[3];
+	
 	
 	float test[6] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-	MPU9250SelfTest(test);
+	HAL_StatusTypeDef mpu9250_ok = MPU9250_self_test();
+	MPU9250_calibrate();
 	
   /* USER CODE END 2 */
 
@@ -141,14 +144,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		//HAL_StatusTypeDef status = MPU9250_who_am_i();
-		MPU9250_read_mag();
-		
-		float x = (mpu9250.mag_data->x) * 0.15;
-		float y = (mpu9250.mag_data->y) * 0.15;
-		float z = (mpu9250.mag_data->z) * 0.15;
-		
-		uint8_t a = 0;
+		MPU9250_get_accel();
+		MPU9250_get_gyro();
 		HAL_Delay(100);
   /* USER CODE END WHILE */
 	}
