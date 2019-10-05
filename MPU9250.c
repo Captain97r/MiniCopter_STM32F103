@@ -2,11 +2,6 @@
 #include "math.h"
 
 	
-sensor_data_t accel_data;
-sensor_data_t gyro_data;
-sensor_data_t mag_data;
-
-
 // MPU9250 read/write operations
 HAL_StatusTypeDef MPU9250_read(uint8_t *data)
 {
@@ -95,14 +90,14 @@ void MPU9250_startup()
 	uint8_t gyro_config;
 	MPU9250_read_reg(GYRO_CONFIG, &gyro_config);
 	gyro_config &= 0b11100100;																				// Clear Fchoice bits [1:0] and AFS bits [4:3]
-	gyro_config |= (GFS_250DPS << 3);																		// Set full scale range for the gyro
+	gyro_config |= (mpu9250.gyroscope.scale << 3);															// Set full scale range for the gyro
 	MPU9250_write_reg(GYRO_CONFIG, gyro_config);															// Write new GYRO_CONFIG value to register
   
 	// Set accelerometer full-scale range configuration
 	uint8_t acc_config;																						// Get current ACCEL_CONFIG register value
 	MPU9250_read_reg(ACCEL_CONFIG, &acc_config);
 	acc_config &= 0b11100111;																				// Clear AFS bits [4:3]
-	acc_config |= (AFS_2G << 3);																				// Set full scale range for the accelerometer 
+	acc_config |= (mpu9250.accelerometer.scale << 3); 														// Set full scale range for the accelerometer 
 	MPU9250_write_reg(ACCEL_CONFIG, acc_config);															// Write new ACCEL_CONFIG register value
 
 	// Set accelerometer sample rate configuration
@@ -147,7 +142,7 @@ void AK8963_startup()
 	// Configure the magnetometer for continuous read and highest resolution
 	// set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
 	// and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
-	AK8963_write_reg(AK8963_CNTL, (uint8_t)((MFS_16BITS << 4) | 0b00000110));								// Set magnetometer data resolution and sample ODR
+	AK8963_write_reg(AK8963_CNTL, (uint8_t)((mpu9250.magnetometer.scale << 4) | 0b00000110));				// Set magnetometer data resolution and sample ODR
 	HAL_Delay(50);
 }
 
@@ -156,9 +151,13 @@ void MPU9250_init(I2C_HandleTypeDef *hi2c)
 {
 	mpu9250.hi2c = hi2c;
 	
-	mpu9250.accel_data = &accel_data;
-	mpu9250.gyro_data = &gyro_data;
-	mpu9250.mag_data = &mag_data;
+	mpu9250.accelerometer.scale			= AFS_2G;
+	mpu9250.gyroscope.scale				= GFS_250DPS;
+	mpu9250.magnetometer.scale			= MFS_16BITS;
+	
+	mpu9250.accelerometer.resolution	= 2.0 / 32768.0;
+	mpu9250.gyroscope.resolution		= 250.0 / 32768.0;
+	mpu9250.magnetometer.resolution		= 0.15;
 	
 	MPU9250_startup();
 	AK8963_startup();
@@ -170,15 +169,15 @@ void resetMPU9250() {
 	HAL_Delay(100);
 }
 
-void MPU9250_read_temp()
+void MPU9250_get_temp()
 {
 	uint8_t rawData[2];																						// x/y/z gyro register data stored here
 	MPU9250_read_reg(TEMP_OUT_H, &rawData[1]);
 	MPU9250_read_reg(TEMP_OUT_L, &rawData[0]);
-	mpu9250.temp_data = (int16_t)(((int16_t)rawData[1]) << 8 | rawData[0]);									// Turn the MSB and LSB into a 16-bit value
+	mpu9250.temperature = (int16_t)(((int16_t)rawData[1]) << 8 | rawData[0]);						// Turn the MSB and LSB into a 16-bit value
 }
 
-void MPU9250_read_accel()
+void MPU9250_get_accel()
 {
 	uint8_t rawData[6];
 	MPU9250_read_reg(ACCEL_ZOUT_L, &rawData[5]);
@@ -188,12 +187,12 @@ void MPU9250_read_accel()
 	MPU9250_read_reg(ACCEL_XOUT_L, &rawData[1]);
 	MPU9250_read_reg(ACCEL_XOUT_H, &rawData[0]);
 	
-	mpu9250.accel_data->x = (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
-	mpu9250.accel_data->y = (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);  
-	mpu9250.accel_data->z = (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]); 
+	mpu9250.accelerometer.data.x = (((int16_t)(((int16_t)rawData[0] << 8) | rawData[1])) * mpu9250.accelerometer.resolution) * 10 - mpu9250.accelerometer.offset.x;
+	mpu9250.accelerometer.data.y = (((int16_t)(((int16_t)rawData[2] << 8) | rawData[3])) * mpu9250.accelerometer.resolution) * 10 - mpu9250.accelerometer.offset.y; 
+	mpu9250.accelerometer.data.z = (((int16_t)(((int16_t)rawData[4] << 8) | rawData[5])) * mpu9250.accelerometer.resolution) * 10 - mpu9250.accelerometer.offset.z;
 }
 
-void MPU9250_read_gyro()
+void MPU9250_get_gyro()
 {
 	uint8_t rawData[6];
 	MPU9250_read_reg(GYRO_ZOUT_L, &rawData[5]);
@@ -203,14 +202,14 @@ void MPU9250_read_gyro()
 	MPU9250_read_reg(GYRO_ZOUT_L, &rawData[1]);
 	MPU9250_read_reg(GYRO_ZOUT_H, &rawData[0]);
 	
-	mpu9250.gyro_data->x = (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
-	mpu9250.gyro_data->y = (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);  
-	mpu9250.gyro_data->z = (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]);	 
+	mpu9250.gyroscope.data.x = ((int16_t)(((int16_t)rawData[0] << 8) | rawData[1])) * mpu9250.gyroscope.resolution;
+	mpu9250.gyroscope.data.y = ((int16_t)(((int16_t)rawData[2] << 8) | rawData[3])) * mpu9250.gyroscope.resolution;
+	mpu9250.gyroscope.data.z = ((int16_t)(((int16_t)rawData[4] << 8) | rawData[5])) * mpu9250.gyroscope.resolution;
 }
 
-void MPU9250_read_mag()
+void MPU9250_get_mag()
 {
-	uint8_t rawData[7];																						// x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
+	uint8_t rawData[7];																		// x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
 	uint8_t resp;
 	AK8963_read_reg(AK8963_ST1, &resp);
 	if(resp & 0x01) 
@@ -228,15 +227,14 @@ void MPU9250_read_mag()
 		if (!(rawData[6] & 0x08)) 
 		{
 			 // Check if magnetic sensor overflow set, if not then report data
-			mpu9250.mag_data->x = (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
-			mpu9250.mag_data->y = (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);  
-			mpu9250.mag_data->z = (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]);	
+			mpu9250.magnetometer.data.x = ((int16_t)(((int16_t)rawData[0] << 8) | rawData[1])) * mpu9250.magnetometer.resolution;
+			mpu9250.magnetometer.data.y = ((int16_t)(((int16_t)rawData[2] << 8) | rawData[3])) * mpu9250.magnetometer.resolution;
+			mpu9250.magnetometer.data.z = ((int16_t)(((int16_t)rawData[4] << 8) | rawData[5])) * mpu9250.magnetometer.resolution;
 		}
 	}
 }
 
-
-void calibrateMPU9250(float * dest1, float * dest2)
+void MPU9250_calibrate()
 {  
 	uint8_t data[12];  // data array to hold accelerometer and gyro x, y, z, data
 	uint16_t ii, packet_count, fifo_count;
@@ -337,9 +335,9 @@ void calibrateMPU9250(float * dest1, float * dest2)
 	  writeByte(MPU9250_ADDRESS, ZG_OFFSET_H, data[4]);
 	  writeByte(MPU9250_ADDRESS, ZG_OFFSET_L, data[5]);
 	  */
-	dest1[0] = (float) gyro_bias[0] / (float) gyrosensitivity;  // construct gyro bias in deg/s for later manual subtraction
-	dest1[1] = (float) gyro_bias[1] / (float) gyrosensitivity;
-	dest1[2] = (float) gyro_bias[2] / (float) gyrosensitivity;
+	mpu9250.gyroscope.offset.x = (float) gyro_bias[0] / (float) gyrosensitivity;  // construct gyro bias in deg/s for later manual subtraction
+	mpu9250.gyroscope.offset.y = (float) gyro_bias[1] / (float) gyrosensitivity;
+	mpu9250.gyroscope.offset.z = (float) gyro_bias[2] / (float) gyrosensitivity;
 
 	// Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
 	// factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
@@ -391,14 +389,20 @@ void calibrateMPU9250(float * dest1, float * dest2)
 	  writeByte(MPU9250_ADDRESS, ZA_OFFSET_L, data[5]);
 	  */
 	  // Output scaled accelerometer biases for manual subtraction in the main program
-	dest2[0] = (float)accel_bias[0] / (float)accelsensitivity; 
-	dest2[1] = (float)accel_bias[1] / (float)accelsensitivity;
-	dest2[2] = (float)accel_bias[2] / (float)accelsensitivity;
+	mpu9250.accelerometer.offset.x = (float)accel_bias[0] / (float)accelsensitivity; 
+	mpu9250.accelerometer.offset.y = (float)accel_bias[1] / (float)accelsensitivity;
+	mpu9250.accelerometer.offset.z = (float)accel_bias[2] / (float)accelsensitivity;
 }
 
 
-void MPU9250SelfTest(float * destination) // Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
+HAL_StatusTypeDef MPU9250_self_test()
 {
+	float acc_delta[3] = { 0 };
+	float gyr_delta[3] = { 0 };
+	float acc_threshold[3] = {2.4, 2.9, 2.3};
+	float gyr_threshold[3] = {2.3, 3.6, 1.7};
+	
+	
 	uint8_t rawData[6] = { 0, 0, 0, 0, 0, 0 };
 	uint8_t selfTest[6];
 	int32_t gAvg[3] = { 0 }, aAvg[3] = { 0 }, aSTAvg[3] = { 0 }, gSTAvg[3] = { 0 };
@@ -484,12 +488,12 @@ void MPU9250SelfTest(float * destination) // Should return percent deviation fro
 	HAL_Delay(25);  // Delay a while to let the device stabilize
    
 	// Retrieve accelerometer and gyro factory Self-Test Code from USR_Reg
-	selfTest[0] = MPU9250_read_reg(SELF_TEST_X_ACCEL, &selfTest[0]);    // X-axis accel self-test results
-	selfTest[1] = MPU9250_read_reg(SELF_TEST_Y_ACCEL, &selfTest[1]);    // Y-axis accel self-test results
-	selfTest[2] = MPU9250_read_reg(SELF_TEST_Z_ACCEL, &selfTest[2]);    // Z-axis accel self-test results
-	selfTest[3] = MPU9250_read_reg(SELF_TEST_X_GYRO, &selfTest[3]);    // X-axis gyro self-test results
-	selfTest[4] = MPU9250_read_reg(SELF_TEST_Y_GYRO, &selfTest[4]);    // Y-axis gyro self-test results
-	selfTest[5] = MPU9250_read_reg(SELF_TEST_Z_GYRO, &selfTest[5]);    // Z-axis gyro self-test results
+	MPU9250_read_reg(SELF_TEST_X_ACCEL, &selfTest[0]);    // X-axis accel self-test results
+	MPU9250_read_reg(SELF_TEST_Y_ACCEL, &selfTest[1]);    // Y-axis accel self-test results
+	MPU9250_read_reg(SELF_TEST_Z_ACCEL, &selfTest[2]);    // Z-axis accel self-test results
+	MPU9250_read_reg(SELF_TEST_X_GYRO, &selfTest[3]);    // X-axis gyro self-test results
+	MPU9250_read_reg(SELF_TEST_Y_GYRO, &selfTest[4]);    // Y-axis gyro self-test results
+	MPU9250_read_reg(SELF_TEST_Z_GYRO, &selfTest[5]);    // Z-axis gyro self-test results
 
    // Retrieve factory self-test value from self-test code reads
     factoryTrim[0] = (float)(2620 / 1 << FS)*(pow(1.01, ((float)selfTest[0] - 1.0)));  // FT[Xa] factory trim calculation
@@ -502,8 +506,14 @@ void MPU9250SelfTest(float * destination) // Should return percent deviation fro
    // Report results as a ratio of (STR - FT)/FT; the change from Factory Trim of the Self-Test Response
    // To get percent, must multiply by 100
      for(int i = 0 ; i < 3 ; i++) {
-		destination[i] = 100.0*((float)(aSTAvg[i] - aAvg[i])) / factoryTrim[i] - 100.;  // Report percent differences
-		destination[i + 3] = 100.0*((float)(gSTAvg[i] - gAvg[i])) / factoryTrim[i + 3] - 100.;  // Report percent differences
+		acc_delta[i] = 100.0*((float)(aSTAvg[i] - aAvg[i])) / factoryTrim[i] - 100.;		// Report percent differences
+		gyr_delta[i] = 100.0*((float)(gSTAvg[i] - gAvg[i])) / factoryTrim[i + 3] - 100.;	// Report percent differences
 	}
-   
+	
+	for (int i = 0; i < 3; i++)
+	{	
+		if ((acc_threshold[i] < acc_delta[i]) || (acc_threshold[i] < -acc_delta[i]) || (gyr_threshold[i] < gyr_delta[i]) || (gyr_threshold[i] < -gyr_delta[i])) 
+			return HAL_ERROR;
+	}
+	return HAL_OK;
 }

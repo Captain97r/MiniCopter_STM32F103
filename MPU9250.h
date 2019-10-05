@@ -181,36 +181,43 @@ typedef enum {
 
 typedef struct
 {
-	uint16_t x;
-	uint16_t y;
-	uint16_t z;
+	float x;
+	float y;
+	float z;
 } sensor_data_t;
 
 typedef struct
 {
-	I2C_HandleTypeDef *hi2c;
-	sensor_data_t *accel_data;
-	sensor_data_t *gyro_data;
-	sensor_data_t *mag_data;
-	uint16_t temp_data;
+	sensor_data_t				data;
+	sensor_data_t				offset;
+	int8_t						scale;
+	float						resolution;
+} sensor_t;
+
+typedef struct
+{
+	I2C_HandleTypeDef*			hi2c;
+	sensor_t					accelerometer;
+	sensor_t					gyroscope;
+	sensor_t					magnetometer;
+	float						temperature;
 } MPU9250_t;
+
 
 MPU9250_t mpu9250;
 
 HAL_StatusTypeDef MPU9250_who_am_i();
 void MPU9250_init(I2C_HandleTypeDef *hi2c);
 
-void calibrateMPU9250(float * dest1, float * dest2);
+void MPU9250_calibrate();
 
-void MPU9250SelfTest(float * destination);
+HAL_StatusTypeDef MPU9250_self_test();
 
-void MPU9250_read_temp();
+void MPU9250_get_accel();
 
-void MPU9250_read_accel();
+void MPU9250_get_gyro();
 
-void MPU9250_read_gyro();
-
-void MPU9250_read_mag();
+void MPU9250_get_mag();
 
 
 #endif /*__MPU9250_H */
