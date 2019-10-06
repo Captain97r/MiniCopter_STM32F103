@@ -118,8 +118,23 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-
-	MPU9250_init(&hi2c1);
+	
+	
+	HAL_GPIO_WritePin(AD0_GPIO_Port, AD0_Pin, GPIO_PIN_RESET);
+	HAL_Delay(50);
+	
+	MPU9250_init_t mpu9250_init_s;
+	mpu9250_init_s.hi2c				= &hi2c1;
+	mpu9250_init_s.accel_scale		= AFS_2G;
+	mpu9250_init_s.gyro_scale		= GFS_250DPS;
+	mpu9250_init_s.mag_scale		= MFS_16BITS;
+	mpu9250_init_s.mag_freq			= MAG_FREQ_100HZ;
+	mpu9250_init_s.accel_bandwidth	= ACCEL_BANDWIDTH_DEFAULT;
+	mpu9250_init_s.accel_freq		= ACCEL_FREQ_DEFAULT;
+	mpu9250_init_s.gyro_bandwidth	= GYRO_BANDWIDTH_DEFAULT;
+	mpu9250_init_s.gyro_freq		= GYRO_FREQ_DEFAULT;
+	
+	HAL_StatusTypeDef ok = MPU9250_init(&mpu9250_init_s);
 	
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -128,16 +143,6 @@ int main(void)
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &battery.buf, ADC_BUFFER_SIZE);
 	HAL_UART_Receive_DMA(&huart1, (uint8_t *)&message.buf, MESSAGE_BUFFER_SIZE); 
 
-	HAL_GPIO_WritePin(AD0_GPIO_Port, AD0_Pin, GPIO_PIN_RESET);
-	
-	float acc_offset[3];
-	float gyr_offset[3];
-	
-	
-	float test[6] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-	HAL_StatusTypeDef mpu9250_ok = MPU9250_self_test();
-	MPU9250_calibrate();
-	
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -146,6 +151,7 @@ int main(void)
 	{
 		MPU9250_get_accel();
 		MPU9250_get_gyro();
+		MPU9250_get_mag();
 		HAL_Delay(100);
   /* USER CODE END WHILE */
 	}
