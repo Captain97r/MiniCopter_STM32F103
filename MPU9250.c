@@ -61,54 +61,217 @@ HAL_StatusTypeDef AK8963_write_reg(uint8_t address, uint8_t data)
 
 
 
-// Fuctions
+// Functions
+
+HAL_StatusTypeDef MPU9250_set_gyroscope_frequency(GYRO_BANDWIDTH bandwidth, GYRO_FREQUENCY frequency)
+{
+	switch (frequency)
+	{
+	case GYRO_FREQ_32KHZ:
+		switch (bandwidth)
+		{
+		case GYRO_BANDWIDTH_DEFAULT:
+		case GYRO_BANDWIDTH_250HZ:
+		case GYRO_BANDWIDTH_184HZ:
+		case GYRO_BANDWIDTH_92HZ:
+		case GYRO_BANDWIDTH_41HZ:
+		case GYRO_BANDWIDTH_20HZ:
+		case GYRO_BANDWIDTH_10HZ:
+		case GYRO_BANDWIDTH_5HZ:
+			return HAL_ERROR;
+		case GYRO_BANDWIDTH_8800HZ:
+			MPU9250_write_reg(CONFIG, MPU9250_DLPF_CFG_0);
+			MPU9250_write_reg(GYRO_CONFIG, GYRO_FCHOISE_2b00);
+			return HAL_OK;
+		case GYRO_BANDWIDTH_3600HZ:
+			MPU9250_write_reg(CONFIG, MPU9250_DLPF_CFG_0);
+			MPU9250_write_reg(GYRO_CONFIG, GYRO_FCHOISE_2b01);
+			return HAL_OK;
+		}
+	case GYRO_FREQ_8KHZ:
+		switch (bandwidth)
+		{
+		case GYRO_BANDWIDTH_DEFAULT:
+		case GYRO_BANDWIDTH_8800HZ:
+		case GYRO_BANDWIDTH_184HZ:
+		case GYRO_BANDWIDTH_92HZ:
+		case GYRO_BANDWIDTH_41HZ:
+		case GYRO_BANDWIDTH_20HZ:
+		case GYRO_BANDWIDTH_10HZ:
+		case GYRO_BANDWIDTH_5HZ:
+			return HAL_ERROR;
+		case GYRO_BANDWIDTH_3600HZ:
+			MPU9250_write_reg(CONFIG, MPU9250_DLPF_CFG_7);
+			MPU9250_write_reg(GYRO_CONFIG, GYRO_FCHOISE_2b11);
+			return HAL_OK;
+		case GYRO_BANDWIDTH_250HZ:
+			MPU9250_write_reg(CONFIG, MPU9250_DLPF_CFG_0);
+			MPU9250_write_reg(GYRO_CONFIG, GYRO_FCHOISE_2b11);
+			return HAL_OK;
+		}
+	case GYRO_FREQ_DEFAULT:
+	case GYRO_FREQ_1KHZ:
+		switch (bandwidth)
+		{
+		case GYRO_BANDWIDTH_8800HZ:
+		case GYRO_BANDWIDTH_3600HZ:
+		case GYRO_BANDWIDTH_250HZ:
+			return HAL_ERROR;
+		case GYRO_BANDWIDTH_184HZ:
+			MPU9250_write_reg(CONFIG, MPU9250_DLPF_CFG_1);
+			MPU9250_write_reg(GYRO_CONFIG, GYRO_FCHOISE_2b11);
+			return HAL_OK;
+		case GYRO_BANDWIDTH_92HZ:
+			MPU9250_write_reg(CONFIG, MPU9250_DLPF_CFG_2);
+			MPU9250_write_reg(GYRO_CONFIG, GYRO_FCHOISE_2b11);
+			return HAL_OK;
+		case GYRO_BANDWIDTH_DEFAULT:
+		case GYRO_BANDWIDTH_41HZ:
+			MPU9250_write_reg(CONFIG, MPU9250_DLPF_CFG_3);
+			MPU9250_write_reg(GYRO_CONFIG, GYRO_FCHOISE_2b11);
+			return HAL_OK;
+		case GYRO_BANDWIDTH_20HZ:
+			MPU9250_write_reg(CONFIG, MPU9250_DLPF_CFG_4);
+			MPU9250_write_reg(GYRO_CONFIG, GYRO_FCHOISE_2b11);
+			return HAL_OK;
+		case GYRO_BANDWIDTH_10HZ:
+			MPU9250_write_reg(CONFIG, MPU9250_DLPF_CFG_5);
+			MPU9250_write_reg(GYRO_CONFIG, GYRO_FCHOISE_2b11);
+			return HAL_OK;
+		case GYRO_BANDWIDTH_5HZ:
+			MPU9250_write_reg(CONFIG, MPU9250_DLPF_CFG_6);
+			MPU9250_write_reg(GYRO_CONFIG, GYRO_FCHOISE_2b11);
+			return HAL_OK;
+		}
+	}
+}
+
+HAL_StatusTypeDef MPU9250_set_accelerometer_frequency(ACCEL_BANDWIDTH bandwidth, ACCEL_FREQUENCY frequency)
+{
+	switch (frequency)
+	{
+	case ACCEL_FREQ_4KHZ:
+		switch (bandwidth)
+		{
+		case ACCEL_BANDWIDTH_DEFAULT:
+		case ACCEL_BANDWIDTH_420HZ:
+		case ACCEL_BANDWIDTH_218HZ:
+		case ACCEL_BANDWIDTH_99HZ:
+		case ACCEL_BANDWIDTH_44HZ:
+		case ACCEL_BANDWIDTH_21HZ:
+		case ACCEL_BANDWIDTH_10HZ:
+		case ACCEL_BANDWIDTH_5HZ:
+			return HAL_ERROR;
+		case ACCEL_BANDWIDTH_1046HZ:
+			MPU9250_write_reg(ACCEL_CONFIG2, ACCEL_FCHOISE_0 | ACCEL_DLPF_CFG_0);
+			return HAL_OK;
+		}
+	case ACCEL_FREQ_DEFAULT:
+	case ACCEL_FREQ_1KHZ:
+		switch (bandwidth)
+		{
+		case ACCEL_BANDWIDTH_1046HZ:
+			return HAL_ERROR;
+		case ACCEL_BANDWIDTH_420HZ:
+			MPU9250_write_reg(ACCEL_CONFIG2, ACCEL_FCHOISE_1 | ACCEL_DLPF_CFG_7);
+			return HAL_OK;
+		case ACCEL_BANDWIDTH_218HZ:
+			MPU9250_write_reg(ACCEL_CONFIG2, ACCEL_FCHOISE_1 | ACCEL_DLPF_CFG_0);
+			return HAL_OK;
+		case ACCEL_BANDWIDTH_99HZ:
+			MPU9250_write_reg(ACCEL_CONFIG2, ACCEL_FCHOISE_1 | ACCEL_DLPF_CFG_2);
+			return HAL_OK;
+		case ACCEL_BANDWIDTH_DEFAULT:
+		case ACCEL_BANDWIDTH_44HZ:
+			MPU9250_write_reg(ACCEL_CONFIG2, ACCEL_FCHOISE_1 | ACCEL_DLPF_CFG_3);
+			return HAL_OK;
+		case ACCEL_BANDWIDTH_21HZ:
+			MPU9250_write_reg(ACCEL_CONFIG2, ACCEL_FCHOISE_1 | ACCEL_DLPF_CFG_4);
+			return HAL_OK;
+		case ACCEL_BANDWIDTH_10HZ:
+			MPU9250_write_reg(ACCEL_CONFIG2, ACCEL_FCHOISE_1 | ACCEL_DLPF_CFG_5);
+			return HAL_OK;
+		case ACCEL_BANDWIDTH_5HZ:
+			MPU9250_write_reg(ACCEL_CONFIG2, ACCEL_FCHOISE_1 | ACCEL_DLPF_CFG_6);
+			return HAL_OK;
+		}
+	}
+}
+
+HAL_StatusTypeDef MPU9250_set_sample_rate_divider(uint8_t divider)
+{
+	return MPU9250_write_reg(SMPLRT_DIV, divider);
+}
+
+HAL_StatusTypeDef MPU9250_set_internal_clock_source()
+{
+	return MPU9250_write_reg(PWR_MGMT_1, MPU9250_CLK_INTRNL);
+}
+
+HAL_StatusTypeDef MPU9250_set_PLL_clock_source()
+{
+	return MPU9250_write_reg(PWR_MGMT_1, MPU9250_CLK_PLL);
+}
+
+HAL_StatusTypeDef MPU9250_stop_clock_source()
+{
+	return MPU9250_write_reg(PWR_MGMT_1, MPU9250_CLK_STOP);
+}
+
+HAL_StatusTypeDef MPU9250_set_accel_fsr(ACCEL_SCALE scale)
+{
+	return MPU9250_write_reg(ACCEL_CONFIG, scale);
+}
+
+HAL_StatusTypeDef MPU9250_set_gyro_fsr(GYRO_SCALE scale)
+{
+	return MPU9250_write_reg(GYRO_CONFIG, scale);
+}
+
+HAL_StatusTypeDef MPU9250_set_mag_fsr(MAG_SCALE scale, MAG_FREQUENCY freq)
+{
+	return AK8963_write_reg(AK8963_CNTL, scale | freq);
+}
+
+HAL_StatusTypeDef MPU9250_reset() { 
+	MPU9250_write_reg(PWR_MGMT_1, 0x80); 
+	HAL_Delay(100);
+	return HAL_OK;
+}
+
 HAL_StatusTypeDef MPU9250_who_am_i()
 {
 	uint8_t responce;
 	MPU9250_read_reg(WHO_AM_I_MPU9250, &responce);
-	return (responce == 0x71) ? HAL_OK : HAL_ERROR;
+	return (responce == MPU9250_WHO_AM_I_RSP) ? HAL_OK : HAL_ERROR;
 }
 
-void MPU9250_startup()
-{  																					
-	MPU9250_write_reg(PWR_MGMT_1, 0x00);																	// Clear sleep mode bit (6), enable all sensors 
-	HAL_Delay(100);																							// Delay 100 ms for PLL to get established on x-axis gyro; should check for PLL ready interrupt  
+HAL_StatusTypeDef MPU9250_startup(MPU9250_init_t *mpu9250_init)
+{
+	// Clear sleep mode bit (6), enable all sensors 
+	MPU9250_write_reg(PWR_MGMT_1, 0x00);
+	HAL_Delay(100);
 	
-	MPU9250_write_reg(PWR_MGMT_1, 0x01);																	// Set clock source to be PLL with x-axis gyroscope reference, bits 2:0 = 001
+	MPU9250_set_PLL_clock_source();
 
-	// Configure Gyro and Accelerometer
-	// Disable FSYNC and set accelerometer and gyro bandwidth to 44 and 42 Hz, respectively; 
-	// DLPF_CFG = bits 2:0 = 010; this sets the sample rate at 1 kHz for both
-	// Maximum delay is 4.9 ms which is just over a 200 Hz maximum rate
-	MPU9250_write_reg(CONFIG, 0x03);
+	if (MPU9250_set_gyroscope_frequency(mpu9250_init->gyro_bandwidth, mpu9250_init->gyro_freq) == HAL_ERROR)
+		return HAL_ERROR;
 	
-	// Set sample rate = gyroscope output rate/(1 + SMPLRT_DIV)
-	MPU9250_write_reg(SMPLRT_DIV, 0x04);																	// Use a 200 Hz rate; the same rate set in CONFIG above
+	// Use a 200 Hz rate; the same rate set in CONFIG above
+	if (MPU9250_set_sample_rate_divider(0x04) == HAL_ERROR)
+		return HAL_ERROR;
 	
 	// Set gyroscope full scale range
-	// Range selects FS_SEL and AFS_SEL are 0 - 3, so 2-bit values are left-shifted into positions 4:3
-	uint8_t gyro_config;
-	MPU9250_read_reg(GYRO_CONFIG, &gyro_config);
-	gyro_config &= 0b11100100;																				// Clear Fchoice bits [1:0] and AFS bits [4:3]
-	gyro_config |= (mpu9250.gyroscope.scale << 3);															// Set full scale range for the gyro
-	MPU9250_write_reg(GYRO_CONFIG, gyro_config);															// Write new GYRO_CONFIG value to register
+	if (MPU9250_set_gyro_fsr(mpu9250_init->gyro_scale) == HAL_ERROR)
+		return HAL_ERROR;
   
 	// Set accelerometer full-scale range configuration
-	uint8_t acc_config;																						// Get current ACCEL_CONFIG register value
-	MPU9250_read_reg(ACCEL_CONFIG, &acc_config);
-	acc_config &= 0b11100111;																				// Clear AFS bits [4:3]
-	acc_config |= (mpu9250.accelerometer.scale << 3); 														// Set full scale range for the accelerometer 
-	MPU9250_write_reg(ACCEL_CONFIG, acc_config);															// Write new ACCEL_CONFIG register value
+	if (MPU9250_set_accel_fsr(mpu9250_init->accel_scale) == HAL_ERROR)
+		return HAL_ERROR;
 
-	// Set accelerometer sample rate configuration
-	// It is possible to get a 4 kHz sample rate from the accelerometer by choosing 1 for
-	// accel_fchoice_b bit [3]; in this case the bandwidth is 1.13 kHz
-	uint8_t acc_config2;
-	MPU9250_read_reg(ACCEL_CONFIG2, &acc_config2);															// Get current ACCEL_CONFIG2 register value
-	acc_config2 &= 0b11110000;																				// Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0])  
-	acc_config2 |= 0b00000011;																				// Set accelerometer rate to 1 kHz and bandwidth to 41 Hz
-	MPU9250_write_reg(ACCEL_CONFIG2, acc_config2);															// Write new ACCEL_CONFIG2 register value
-
+	if (MPU9250_set_accelerometer_frequency(mpu9250_init->accel_bandwidth, mpu9250_init->accel_freq) == HAL_ERROR)
+		return HAL_ERROR;
+	
 	// The accelerometer, gyro, and thermometer are set to 1 kHz sample rates, 
 	// but all these rates are further reduced by a factor of 5 to 200 Hz because of the SMPLRT_DIV setting
 
@@ -118,63 +281,87 @@ void MPU9250_startup()
 	// can join the I2C bus and all can be controlled by the Arduino as master
 	MPU9250_write_reg(INT_PIN_CFG, 0x22);
 	MPU9250_write_reg(INT_ENABLE, 0x00);																	// Enable data ready (bit 0) interrupt
+	
+	
+	if (MPU9250_self_test() == HAL_ERROR)
+		return HAL_ERROR;
+	
+	return HAL_OK;
 }
 
-void AK8963_startup()
+HAL_StatusTypeDef AK8963_startup(MPU9250_init_t *mpu9250_init)
 {
-	// First extract the factory calibration for each magnetometer axis
-	uint8_t rawData[3];																						// x/y/z gyro calibration data stored here
-	AK8963_write_reg(AK8963_CNTL, 0x00);																	// Power down magnetometer  
+	if (AK8963_self_test() != HAL_OK)
+		return HAL_ERROR;
+	
+	AK8963_calibrate();
+	
+	if (MPU9250_set_mag_fsr(mpu9250_init->mag_scale, mpu9250_init->mag_freq) == HAL_ERROR)
+		return HAL_ERROR;
 	HAL_Delay(50);
 	
-	AK8963_write_reg(AK8963_CNTL, 0x0F);																	// Enter Fuse ROM access mode
-	HAL_Delay(50);
-	
-	AK8963_read_reg(AK8963_ASAX, &rawData[0]);															   // Read the x-, y-, and z-axis calibration values
-	AK8963_read_reg(AK8963_ASAY, &rawData[1]);
-	AK8963_read_reg(AK8963_ASAZ, &rawData[2]);
-	
-	//destination[0] =  (float)(rawData[0] - 128) / 256.0f + 1.0f;											// Return x-axis sensitivity adjustment values, etc.
-	//destination[1] =  (float)(rawData[1] - 128) / 256.0f + 1.0f;  
-	//destination[2] =  (float)(rawData[2] - 128) / 256.0f + 1.0f; 
-	AK8963_write_reg(AK8963_CNTL, 0x00);																	// Power down magnetometer  
-	HAL_Delay(50);
-	// Configure the magnetometer for continuous read and highest resolution
-	// set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
-	// and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
-	AK8963_write_reg(AK8963_CNTL, (uint8_t)((mpu9250.magnetometer.scale << 4) | 0b00000110));				// Set magnetometer data resolution and sample ODR
-	HAL_Delay(50);
+	return HAL_OK;
 }
 
 
-void MPU9250_init(I2C_HandleTypeDef *hi2c)
+HAL_StatusTypeDef MPU9250_init(MPU9250_init_t *mpu9250_init)
 {
-	mpu9250.hi2c = hi2c;
+	mpu9250.hi2c = mpu9250_init->hi2c;
 	
-	mpu9250.accelerometer.scale			= AFS_2G;
-	mpu9250.gyroscope.scale				= GFS_250DPS;
-	mpu9250.magnetometer.scale			= MFS_16BITS;
+	switch (mpu9250_init->accel_scale)
+	{
+	case AFS_2G:
+		mpu9250.accelerometer.resolution	= 2.0 / 32768.0;
+		break;
+	case AFS_4G:
+		mpu9250.accelerometer.resolution	= 4.0 / 32768.0;
+		break;
+	case AFS_8G:
+		mpu9250.accelerometer.resolution	= 8.0 / 32768.0;
+		break;
+	case AFS_16G:
+		mpu9250.accelerometer.resolution	= 16.0 / 32768.0;
+		break;
+	}
 	
-	mpu9250.accelerometer.resolution	= 2.0 / 32768.0;
-	mpu9250.gyroscope.resolution		= 250.0 / 32768.0;
-	mpu9250.magnetometer.resolution		= 0.15;
+	switch (mpu9250_init->gyro_scale)
+	{
+	case GFS_250DPS:
+		mpu9250.gyroscope.resolution		= 250.0 / 32768.0;
+		break;
+	case GFS_500DPS:
+		mpu9250.gyroscope.resolution		= 500.0 / 32768.0;
+		break;
+	case GFS_1000DPS:
+		mpu9250.gyroscope.resolution		= 1000.0 / 32768.0;
+		break;
+	case GFS_2000DPS:
+		mpu9250.gyroscope.resolution		= 2000.0 / 32768.0;
+		break;
+	}
 	
-	MPU9250_startup();
-	AK8963_startup();
+	switch (mpu9250_init->mag_scale)
+	{
+	case MFS_14BITS:
+		mpu9250.magnetometer.resolution		= 0.6;
+		break;
+	case MFS_16BITS:
+		mpu9250.magnetometer.resolution		= 0.15;
+		break;
+	}
+	
+	if (MPU9250_startup(mpu9250_init) == HAL_ERROR)
+		return HAL_ERROR;
+	return AK8963_startup(mpu9250_init);
 }
 
-
-void resetMPU9250() { 
-	MPU9250_write_reg(PWR_MGMT_1, 0x80); 																	// Write a one to bit 7 reset bit; toggle reset device
-	HAL_Delay(100);
-}
 
 void MPU9250_get_temp()
 {
 	uint8_t rawData[2];																						// x/y/z gyro register data stored here
 	MPU9250_read_reg(TEMP_OUT_H, &rawData[1]);
 	MPU9250_read_reg(TEMP_OUT_L, &rawData[0]);
-	mpu9250.temperature = (int16_t)(((int16_t)rawData[1]) << 8 | rawData[0]);						// Turn the MSB and LSB into a 16-bit value
+	mpu9250.temperature = 21.0 + (((int16_t)(((int16_t)rawData[1]) << 8 | rawData[0])) - 4096) / 333.87;	// Turn the MSB and LSB into a 16-bit value
 }
 
 void MPU9250_get_accel()
@@ -210,26 +397,26 @@ void MPU9250_get_gyro()
 void MPU9250_get_mag()
 {
 	uint8_t rawData[7];																		// x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
-	uint8_t resp;
-	AK8963_read_reg(AK8963_ST1, &resp);
-	if(resp & 0x01) 
+	uint8_t ready;
+	AK8963_read_reg(AK8963_ST1, &ready);
+	if (ready & AK8963_DRDY) 
 	{
-		resp = (uint8_t)0;
+		ready = (uint8_t)0;
 		// Read the six raw data and ST2 registers sequentially into data array
-		AK8963_read_reg(AK8963_ST2, &rawData[6]);
 		AK8963_read_reg(AK8963_ZOUT_L, &rawData[5]);
 		AK8963_read_reg(AK8963_ZOUT_H, &rawData[4]);
 		AK8963_read_reg(AK8963_YOUT_L, &rawData[3]);
 		AK8963_read_reg(AK8963_YOUT_H, &rawData[2]);
 		AK8963_read_reg(AK8963_XOUT_L, &rawData[1]);
 		AK8963_read_reg(AK8963_XOUT_H, &rawData[0]);
+		AK8963_read_reg(AK8963_ST2, &rawData[6]);
 
-		if (!(rawData[6] & 0x08)) 
+		if (!(rawData[6] & AK8963_HOFL)) 
 		{
-			 // Check if magnetic sensor overflow set, if not then report data
-			mpu9250.magnetometer.data.x = ((int16_t)(((int16_t)rawData[0] << 8) | rawData[1])) * mpu9250.magnetometer.resolution;
-			mpu9250.magnetometer.data.y = ((int16_t)(((int16_t)rawData[2] << 8) | rawData[3])) * mpu9250.magnetometer.resolution;
-			mpu9250.magnetometer.data.z = ((int16_t)(((int16_t)rawData[4] << 8) | rawData[5])) * mpu9250.magnetometer.resolution;
+			// Check if magnetic sensor overflow set, if not then report data
+			mpu9250.magnetometer.data.x = ((int16_t)(((int16_t)rawData[0] << 8) | rawData[1])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.x - mpu9250.magnetometer.offset.x;
+			mpu9250.magnetometer.data.y = ((int16_t)(((int16_t)rawData[2] << 8) | rawData[3])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.y - mpu9250.magnetometer.offset.y;
+			mpu9250.magnetometer.data.z = ((int16_t)(((int16_t)rawData[4] << 8) | rawData[5])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.z - mpu9250.magnetometer.offset.z;
 		}
 	}
 }
@@ -241,12 +428,12 @@ void MPU9250_calibrate()
 	int32_t gyro_bias[3] = { 0, 0, 0 }, accel_bias[3] = { 0, 0, 0 };
   
 	// reset device, reset all registers, clear gyro and accelerometer bias registers
-	MPU9250_write_reg(PWR_MGMT_1, 0x80);																	// Write a one to bit 7 reset bit; toggle reset device
+	MPU9250_reset();
 	HAL_Delay(100);  
    
 	// get stable time source
 	// Set clock source to be PLL with x-axis gyroscope reference, bits 2:0 = 001
-	MPU9250_write_reg(PWR_MGMT_1, 0x01);  
+	MPU9250_set_PLL_clock_source();
 	MPU9250_write_reg(PWR_MGMT_2, 0x00); 
 	HAL_Delay(200);  
   
@@ -394,6 +581,27 @@ void MPU9250_calibrate()
 	mpu9250.accelerometer.offset.z = (float)accel_bias[2] / (float)accelsensitivity;
 }
 
+void AK8963_calibrate()
+{
+	// First extract the factory calibration for each magnetometer axis
+	uint8_t rawData[3]; 																					// x/y/z gyro calibration data stored here
+	AK8963_write_reg(AK8963_CNTL, AK8963_POWER_DOWN); 														// Power down magnetometer  
+	HAL_Delay(50);
+	
+	AK8963_write_reg(AK8963_CNTL, AK8963_FUSE_ROM); 														// Enter Fuse ROM access mode
+	HAL_Delay(50);
+	
+	AK8963_read_reg(AK8963_ASAX, &rawData[0]); 															    // Read the x-, y-, and z-axis calibration values
+	AK8963_read_reg(AK8963_ASAY, &rawData[1]);
+	AK8963_read_reg(AK8963_ASAZ, &rawData[2]);
+	
+	mpu9250.magnetometer.calibration.x = (float)(rawData[0] - 128) / 256.0f + 1.0f;							// Return x-axis sensitivity adjustment values, etc.
+	mpu9250.magnetometer.calibration.y = (float)(rawData[1] - 128) / 256.0f + 1.0f;  
+	mpu9250.magnetometer.calibration.z = (float)(rawData[2] - 128) / 256.0f + 1.0f; 
+	AK8963_write_reg(AK8963_CNTL, AK8963_POWER_DOWN);  														// Power down magnetometer  
+	HAL_Delay(50);
+}
+
 
 HAL_StatusTypeDef MPU9250_self_test()
 {
@@ -516,4 +724,81 @@ HAL_StatusTypeDef MPU9250_self_test()
 			return HAL_ERROR;
 	}
 	return HAL_OK;
+}
+
+HAL_StatusTypeDef AK8963_self_test()
+{
+	AK8963_write_reg(AK8963_CNTL, AK8963_POWER_DOWN);
+	HAL_Delay(50);
+	
+	AK8963_write_reg(AK8963_ASTC, AK8963_ASTC_SELF);
+	
+	AK8963_write_reg(AK8963_CNTL, AK8963_SELF_TEST);
+	
+	uint8_t drdy;
+	int16_t sensor_data[3] = { 0 };
+	
+	for (uint8_t i = 0; i < 100; i++)
+	{
+		AK8963_read_reg(AK8963_ST1, &drdy);
+		if (drdy & AK8963_DRDY)
+		{
+			uint8_t rawData[7];
+			AK8963_read_reg(AK8963_ZOUT_L, &rawData[5]);
+			AK8963_read_reg(AK8963_ZOUT_H, &rawData[4]);
+			AK8963_read_reg(AK8963_YOUT_L, &rawData[3]);
+			AK8963_read_reg(AK8963_YOUT_H, &rawData[2]);
+			AK8963_read_reg(AK8963_XOUT_L, &rawData[1]);
+			AK8963_read_reg(AK8963_XOUT_H, &rawData[0]);
+			AK8963_read_reg(AK8963_ST2, &rawData[6]);
+			
+			int16_t threshold_min[3] = { 0 };
+			int16_t threshold_max[3] = { 0 };
+			uint8_t bit;
+			AK8963_read_reg(AK8963_CNTL, &bit);
+			if (bit & 0x10)
+			{
+				threshold_min[0] = -200;
+				threshold_min[1] = -200;
+				threshold_min[2] = -3200;
+					
+				threshold_max[0] = 200;
+				threshold_max[1] = 200;
+				threshold_max[2] = -800;
+			}
+			else 
+			{
+				threshold_min[0] = -50;
+				threshold_min[1] = -50;
+				threshold_min[2] = -800;
+					
+				threshold_max[0] = 50;
+				threshold_max[1] = 50;
+				threshold_max[2] = -200;
+			}
+			
+			sensor_data[0] = (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
+			sensor_data[1] = (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);
+			sensor_data[2] = (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]);
+			
+			for (uint8_t k = 0; k < 3; k++)
+			{
+				if (sensor_data[k] < threshold_min[k] || sensor_data[k] > threshold_max[k])
+				{
+					AK8963_write_reg(AK8963_ASTC, 0x00);
+					AK8963_write_reg(AK8963_CNTL, AK8963_POWER_DOWN);
+					return HAL_ERROR;
+				}
+			}
+			AK8963_write_reg(AK8963_ASTC, 0x00);
+			AK8963_write_reg(AK8963_CNTL, AK8963_POWER_DOWN);
+			HAL_Delay(100);
+			return HAL_OK;
+			
+		}
+	}
+	
+	AK8963_write_reg(AK8963_ASTC, 0x00);
+	AK8963_write_reg(AK8963_CNTL, AK8963_POWER_DOWN);
+	return HAL_TIMEOUT;
 }
