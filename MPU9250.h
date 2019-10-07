@@ -167,8 +167,8 @@
 // CNTL Register
 #define AK8963_POWER_DOWN	0x00
 #define AK8963_SINGLE		0x01
-#define AK8963_CONT_8HZ		0x02
-#define AK8963_CONT_100HZ	0x06
+#define AK8963_8HZ			0x02
+#define AK8963_100HZ		0x06
 #define AK8963_SELF_TEST	0x08
 #define AK8963_FUSE_ROM		0x0F
 
@@ -338,8 +338,8 @@ typedef enum {
 
 typedef enum
 {
-	MAG_FREQ_8HZ,
-	MAG_FREQ_100HZ
+	MAG_FREQ_8HZ = AK8963_8HZ,
+	MAG_FREQ_100HZ = AK8963_100HZ
 } MAG_FREQUENCY;
 
 typedef struct
@@ -399,5 +399,7 @@ void MPU9250_get_mag();
 
 void MPU9250_get_temp();
 
+void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
+void toEuler();
 
 #endif /*__MPU9250_H */

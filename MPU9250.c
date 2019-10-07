@@ -1,12 +1,12 @@
 #include "MPU9250.h"
 #include "math.h"
 
-	
 // MPU9250 read/write operations
 HAL_StatusTypeDef MPU9250_read(uint8_t *data)
 {
 	return HAL_I2C_Master_Receive(mpu9250.hi2c, (uint16_t)MPU9250_ADDRESS, (uint8_t *)data, 1, 1000);
 }
+
 
 HAL_StatusTypeDef MPU9250_write(uint8_t *data, uint8_t size)
 {
@@ -34,12 +34,12 @@ HAL_StatusTypeDef MPU9250_write_reg(uint8_t address, uint8_t data)
 // AK8963 read/write operations
 HAL_StatusTypeDef AK8963_read(uint8_t *data)
 {
-	return HAL_I2C_Master_Receive(mpu9250.hi2c, (uint16_t)AK8963_ADDRESS, (uint8_t *)data, 1, 1000);
+	return HAL_I2C_Master_Receive(mpu9250.hi2c, (uint16_t)AK8963_ADDRESS, (uint8_t *)data, 1, 100);
 }
 
 HAL_StatusTypeDef AK8963_write(uint8_t *data, uint8_t size)
 {
-	return HAL_I2C_Master_Transmit(mpu9250.hi2c, (uint16_t)AK8963_ADDRESS, (uint8_t *)data, size, 1000);
+	return HAL_I2C_Master_Transmit(mpu9250.hi2c, (uint16_t)AK8963_ADDRESS, (uint8_t *)data, size, 100);
 }
 
 HAL_StatusTypeDef AK8963_read_reg(uint8_t address, uint8_t *data)
@@ -257,23 +257,17 @@ HAL_StatusTypeDef MPU9250_startup(MPU9250_init_t *mpu9250_init)
 	if (MPU9250_set_gyroscope_frequency(mpu9250_init->gyro_bandwidth, mpu9250_init->gyro_freq) == HAL_ERROR)
 		return HAL_ERROR;
 	
-	// Use a 200 Hz rate; the same rate set in CONFIG above
 	if (MPU9250_set_sample_rate_divider(0x04) == HAL_ERROR)
 		return HAL_ERROR;
 	
-	// Set gyroscope full scale range
 	if (MPU9250_set_gyro_fsr(mpu9250_init->gyro_scale) == HAL_ERROR)
 		return HAL_ERROR;
   
-	// Set accelerometer full-scale range configuration
 	if (MPU9250_set_accel_fsr(mpu9250_init->accel_scale) == HAL_ERROR)
 		return HAL_ERROR;
 
 	if (MPU9250_set_accelerometer_frequency(mpu9250_init->accel_bandwidth, mpu9250_init->accel_freq) == HAL_ERROR)
 		return HAL_ERROR;
-	
-	// The accelerometer, gyro, and thermometer are set to 1 kHz sample rates, 
-	// but all these rates are further reduced by a factor of 5 to 200 Hz because of the SMPLRT_DIV setting
 
 	// Configure Interrupts and Bypass Enable
 	// Set interrupt pin active high, push-pull, and clear on read of INT_STATUS, 
@@ -283,16 +277,16 @@ HAL_StatusTypeDef MPU9250_startup(MPU9250_init_t *mpu9250_init)
 	MPU9250_write_reg(INT_ENABLE, 0x00);																	// Enable data ready (bit 0) interrupt
 	
 	
-	if (MPU9250_self_test() == HAL_ERROR)
-		return HAL_ERROR;
+	//if (MPU9250_self_test() == HAL_ERROR)
+	//	return HAL_ERROR;
 	
 	return HAL_OK;
 }
 
 HAL_StatusTypeDef AK8963_startup(MPU9250_init_t *mpu9250_init)
 {
-	if (AK8963_self_test() != HAL_OK)
-		return HAL_ERROR;
+	//if (AK8963_self_test() != HAL_OK)
+	//	return HAL_ERROR;
 	
 	AK8963_calibrate();
 	
@@ -366,6 +360,7 @@ void MPU9250_get_temp()
 
 void MPU9250_get_accel()
 {
+	uint32_t t1 = HAL_GetTick();
 	uint8_t rawData[6];
 	MPU9250_read_reg(ACCEL_ZOUT_L, &rawData[5]);
 	MPU9250_read_reg(ACCEL_ZOUT_H, &rawData[4]);
@@ -373,10 +368,14 @@ void MPU9250_get_accel()
 	MPU9250_read_reg(ACCEL_YOUT_H, &rawData[2]);
 	MPU9250_read_reg(ACCEL_XOUT_L, &rawData[1]);
 	MPU9250_read_reg(ACCEL_XOUT_H, &rawData[0]);
+	uint32_t t2 = HAL_GetTick();
+	uint8_t rawData1[6];
 	
 	mpu9250.accelerometer.data.x = (((int16_t)(((int16_t)rawData[0] << 8) | rawData[1])) * mpu9250.accelerometer.resolution) * 10 - mpu9250.accelerometer.offset.x;
 	mpu9250.accelerometer.data.y = (((int16_t)(((int16_t)rawData[2] << 8) | rawData[3])) * mpu9250.accelerometer.resolution) * 10 - mpu9250.accelerometer.offset.y; 
 	mpu9250.accelerometer.data.z = (((int16_t)(((int16_t)rawData[4] << 8) | rawData[5])) * mpu9250.accelerometer.resolution) * 10 - mpu9250.accelerometer.offset.z;
+	
+	uint32_t t4 = HAL_GetTick();
 }
 
 void MPU9250_get_gyro()
@@ -389,19 +388,19 @@ void MPU9250_get_gyro()
 	MPU9250_read_reg(GYRO_ZOUT_L, &rawData[1]);
 	MPU9250_read_reg(GYRO_ZOUT_H, &rawData[0]);
 	
-	mpu9250.gyroscope.data.x = ((int16_t)(((int16_t)rawData[0] << 8) | rawData[1])) * mpu9250.gyroscope.resolution;
-	mpu9250.gyroscope.data.y = ((int16_t)(((int16_t)rawData[2] << 8) | rawData[3])) * mpu9250.gyroscope.resolution;
-	mpu9250.gyroscope.data.z = ((int16_t)(((int16_t)rawData[4] << 8) | rawData[5])) * mpu9250.gyroscope.resolution;
+	mpu9250.gyroscope.data.x = ((int16_t)(((int16_t)rawData[0] << 8) | rawData[1])) * mpu9250.gyroscope.resolution * M_PI / 180;
+	mpu9250.gyroscope.data.y = ((int16_t)(((int16_t)rawData[2] << 8) | rawData[3])) * mpu9250.gyroscope.resolution * M_PI / 180;
+	mpu9250.gyroscope.data.z = ((int16_t)(((int16_t)rawData[4] << 8) | rawData[5])) * mpu9250.gyroscope.resolution * M_PI / 180;
 }
 
 void MPU9250_get_mag()
 {
-	uint8_t rawData[7];																		// x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
-	uint8_t ready;
+	uint8_t rawData[7] = { 0 };																		// x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
+	uint8_t ready = 0;
 	AK8963_read_reg(AK8963_ST1, &ready);
 	if (ready & AK8963_DRDY) 
 	{
-		ready = (uint8_t)0;
+		//ready = (uint8_t)0;
 		// Read the six raw data and ST2 registers sequentially into data array
 		AK8963_read_reg(AK8963_ZOUT_L, &rawData[5]);
 		AK8963_read_reg(AK8963_ZOUT_H, &rawData[4]);
@@ -608,7 +607,7 @@ HAL_StatusTypeDef MPU9250_self_test()
 	float acc_delta[3] = { 0 };
 	float gyr_delta[3] = { 0 };
 	float acc_threshold[3] = {2.4, 2.9, 2.3};
-	float gyr_threshold[3] = {2.3, 3.6, 1.7};
+	float gyr_threshold[3] = {2.6, 3.6, 1.7};
 	
 	
 	uint8_t rawData[6] = { 0, 0, 0, 0, 0, 0 };
