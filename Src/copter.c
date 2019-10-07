@@ -1,28 +1,53 @@
 #include "copter.h"
 
 
-void copter_motor_init(copter_t *copter, motor_t *lf, motor_t *rf, motor_t *rb, motor_t *lb)
+void copter_motor_init(motor_t *lf, motor_t *rf, motor_t *rb, motor_t *lb)
 {
-	copter->lf = *lf;
-	copter->rf = *rf;
-	copter->rb = *rb;
-	copter->lb = *lb;
+	copter.lf = *lf;
+	copter.rf = *rf;
+	copter.rb = *rb;
+	copter.lb = *lb;
 	
-	copter->lf.speed = 0;
-	copter->rf.speed = 0;
-	copter->rb.speed = 0;
-	copter->lb.speed = 0;
+	copter.lf.speed = 0;
+	copter.rf.speed = 0;
+	copter.rb.speed = 0;
+	copter.lb.speed = 0;
+	
+	copter.orientation.quat.w = 1.0;
+	copter.orientation.quat.x = 0.0;
+	copter.orientation.quat.y = 0.0;
+	copter.orientation.quat.z = 0.0;
+}
+
+
+void handle_takeoff()
+{
+	
+}
+
+void handle_land()
+{
+	
+}
+
+void handle_manual()
+{
+	
 }
 
 void copter_handle_actuators()
 {
-	// Oh shit, here we go again...
+	switch (copter.mode)
+	{
+	case FLY_MODE_STABILIZED:
+	case FLY_MODE_MANUAL:
+		handle_manual();
+		break;
+	case FLY_MODE_TAKEOFF:
+		handle_takeoff();
+		break;
+	case FLY_MODE_LAND:
+		handle_land();
+		break;
+	}
 }
-
-//void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
-//{
-//	if (htim->Instance == TIM2 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)
-//	{
-//		copter_handle_actuators();
-//	}
-//}

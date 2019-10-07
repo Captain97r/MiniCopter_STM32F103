@@ -54,6 +54,8 @@
 #include "bt_msg_handler.h"
 #include "motor.h"
 #include "copter.h"
+#include "math.h"
+#include <stdlib.h>
 
 /* USER CODE END Includes */
 
@@ -135,31 +137,30 @@ int main(void)
 	mpu9250_init_s.gyro_freq		= GYRO_FREQ_DEFAULT;
 	
 	HAL_StatusTypeDef ok = MPU9250_init(&mpu9250_init_s);
+	copter_motor_init(NULL, NULL, NULL, NULL);
 	
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+	//HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 	
 	HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &battery.buf, ADC_BUFFER_SIZE);
 	HAL_UART_Receive_DMA(&huart1, (uint8_t *)&message.buf, MESSAGE_BUFFER_SIZE); 
-
+	
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		MPU9250_get_accel();
-		MPU9250_get_gyro();
-		MPU9250_get_mag();
-		HAL_Delay(100);
+		
   /* USER CODE END WHILE */
-	}
 
+  /* USER CODE BEGIN 3 */
+
+	}
   /* USER CODE END 3 */
 
 }
-
 
 /**
   * @brief System Clock Configuration
