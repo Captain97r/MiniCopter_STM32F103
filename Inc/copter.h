@@ -38,24 +38,33 @@ typedef struct
 {
 	euler_t euler;
 	quaternion_t quat;
+	float heading;
+	float altitude;
 } orientation_t;
-
 
 typedef struct 
 {
-	motor_t lf;
-	motor_t rf;
-	motor_t rb;
-	motor_t lb;
+	float rollspeed;
+	float pitchspeed;
+	float yawspeed;
+} speed_t;
+
+typedef struct 
+{
+	motor_t front;
+	motor_t right;
+	motor_t back;
+	motor_t left;
 	
 	FLY_MODE mode;
 	actuators_t actuator;
 	orientation_t orientation;
+	speed_t speed;
 } copter_t;
 
 copter_t copter;
 
-void copter_motor_init(motor_t *lf, motor_t *rf, motor_t *rb, motor_t *lb);
+void copter_motor_init(motor_t *f, motor_t *r, motor_t *b, motor_t *l);
 
 void copter_handle_actuators();
 

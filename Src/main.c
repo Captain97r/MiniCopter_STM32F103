@@ -123,28 +123,55 @@ int main(void)
 	
 	
 	HAL_GPIO_WritePin(AD0_GPIO_Port, AD0_Pin, GPIO_PIN_RESET);
-	HAL_Delay(50);
-	
-	MPU9250_init_t mpu9250_init_s;
-	mpu9250_init_s.hi2c				= &hi2c1;
-	mpu9250_init_s.accel_scale		= AFS_2G;
-	mpu9250_init_s.gyro_scale		= GFS_250DPS;
-	mpu9250_init_s.mag_scale		= MFS_16BITS;
-	mpu9250_init_s.mag_freq			= MAG_FREQ_100HZ;
-	mpu9250_init_s.accel_bandwidth	= ACCEL_BANDWIDTH_DEFAULT;
-	mpu9250_init_s.accel_freq		= ACCEL_FREQ_DEFAULT;
-	mpu9250_init_s.gyro_bandwidth	= GYRO_BANDWIDTH_DEFAULT;
-	mpu9250_init_s.gyro_freq		= GYRO_FREQ_DEFAULT;
-	
-	HAL_StatusTypeDef ok = MPU9250_init(&mpu9250_init_s);
-	copter_motor_init(NULL, NULL, NULL, NULL);
+//	HAL_Delay(50);
+//	
+//	MPU9250_init_t mpu9250_init_s;
+//	mpu9250_init_s.hi2c				= &hi2c1;
+//	mpu9250_init_s.accel_scale		= AFS_2G;
+//	mpu9250_init_s.gyro_scale		= GFS_250DPS;
+//	mpu9250_init_s.mag_scale		= MFS_16BITS;
+//	mpu9250_init_s.mag_freq			= MAG_FREQ_100HZ;
+//	mpu9250_init_s.accel_bandwidth	= ACCEL_BANDWIDTH_DEFAULT;
+//	mpu9250_init_s.accel_freq		= ACCEL_FREQ_DEFAULT;
+//	mpu9250_init_s.gyro_bandwidth	= GYRO_BANDWIDTH_DEFAULT;
+//	mpu9250_init_s.gyro_freq		= GYRO_FREQ_DEFAULT;
+//	
+//	HAL_StatusTypeDef ok = MPU9250_init(&mpu9250_init_s);
+//	copter_motor_init(NULL, NULL, NULL, NULL);
+//	
+//	message.huart = &huart1;
 	
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-	//HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 	
-	HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
-	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &battery.buf, ADC_BUFFER_SIZE);
-	HAL_UART_Receive_DMA(&huart1, (uint8_t *)&message.buf, MESSAGE_BUFFER_SIZE); 
+	//HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
+	//HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &battery.buf, ADC_BUFFER_SIZE);
+	//HAL_UART_Receive_DMA(&huart1, (uint8_t *)&message.buf, MESSAGE_BUFFER_SIZE); 
+	
+	HAL_Delay(5000);
+	
+//	htim1.Instance->CCR1 = 85;
+//	htim1.Instance->CCR2 = 85;
+//	htim1.Instance->CCR3 = 85;
+//	htim1.Instance->CCR4 = 85;
+//	
+	
+//	for (int i = 5; i < 100; i++)
+//	{
+//		HAL_Delay(100);
+//		htim1.Instance->CCR1 = i;
+//		htim1.Instance->CCR2 = i;		
+//		htim1.Instance->CCR3 = i;
+//		htim1.Instance->CCR4 = i;
+//	}
+	
+	HAL_Delay(20000);
+	htim1.Instance->CCR1 = 0;
+	htim1.Instance->CCR2 = 0;
+	htim1.Instance->CCR3 = 0;
+	htim1.Instance->CCR4 = 0;
 	
   /* USER CODE END 2 */
 
@@ -154,7 +181,6 @@ int main(void)
 	{
 		
   /* USER CODE END WHILE */
-
   /* USER CODE BEGIN 3 */
 
 	}

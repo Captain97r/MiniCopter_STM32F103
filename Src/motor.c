@@ -2,8 +2,8 @@
 
 void motor_set_speed(motor_t *motor, uint8_t speed)
 {
-	if (speed > 99)
-		speed = 99;
+	if (speed > 100)
+		speed = 100;
 	
 	switch (motor->channel)
 	{

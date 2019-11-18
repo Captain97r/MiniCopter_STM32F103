@@ -10,7 +10,7 @@
 
 float beta = BETA_DEF;  								// 2 * proportional gain (Kp)
 
-float delta_t = 1 / SAMPLE_FREQ_HZ; 						// integration interval for both filter schemes
+float delta_t = 1 / SAMPLE_FREQ_HZ; 					// integration interval for both filter schemes
 
 float eInt[3] = { 0.0f, 0.0f, 0.0f }; 					// vector to hold integral error for Mahony method
 float GyroMeasError = M_PI * (60.0f / 180.0f);
@@ -30,12 +30,19 @@ void calculate_orientation()
 //	MadgwickAHRSupdate(mpu9250.accelerometer.data.x, mpu9250.accelerometer.data.y,  mpu9250.accelerometer.data.z,
 //					   mpu9250.gyroscope.data.x,	 mpu9250.gyroscope.data.y,		mpu9250.gyroscope.data.z,
 //					   mpu9250.magnetometer.data.x,	 mpu9250.magnetometer.data.y,	mpu9250.magnetometer.data.z);
-//	
+	
 	MadgwickAHRSupdateIMU(	mpu9250.accelerometer.data.x,	mpu9250.accelerometer.data.y,	mpu9250.accelerometer.data.z,
 							mpu9250.gyroscope.data.x,		mpu9250.gyroscope.data.y,		mpu9250.gyroscope.data.z);
+	
+	toEuler();
+	float mx = mpu9250.magnetometer.data.x;
+	float my = mpu9250.magnetometer.data.y;
+	float mz = mpu9250.magnetometer.data.z;
+	copter.orientation.heading = atan2f(my * cos(copter.orientation.euler.roll) + mz * sin(copter.orientation.euler.roll), 
+		mx * cos(copter.orientation.euler.pitch) + my * sin(copter.orientation.euler.roll) * sin(copter.orientation.euler.pitch) - mz * cos(copter.orientation.euler.roll) * sin(copter.orientation.euler.pitch));
 }
 
-void MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
+void MadgwickAHRSupdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz) {
 	
 	float q0 = copter.orientation.quat.w, q1 = copter.orientation.quat.x, q2 = copter.orientation.quat.y, q3 = copter.orientation.quat.z;
 	
@@ -137,7 +144,7 @@ void MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float ay, float 
 //---------------------------------------------------------------------------------------------------
 // IMU algorithm update
 
-void MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
+void MadgwickAHRSupdateIMU(float ax, float ay, float az, float gx, float gy, float gz) {
 	
 	float q0 = copter.orientation.quat.w, q1 = copter.orientation.quat.x, q2 = copter.orientation.quat.y, q3 = copter.orientation.quat.z;
 	
