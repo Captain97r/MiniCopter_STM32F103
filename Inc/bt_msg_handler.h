@@ -1,7 +1,7 @@
 #ifndef __msg_handler_H
 #define __msg_handler_H
 
-#define MESSAGE_BUFFER_SIZE		16
+#define MESSAGE_BUFFER_SIZE		8
 
 #include "stm32f1xx_hal.h"
 
