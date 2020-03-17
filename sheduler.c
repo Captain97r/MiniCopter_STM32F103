@@ -22,10 +22,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 		if (!(cnt % IMU_HANDLING_INTERVAL_MS))
 		{
-			tick = HAL_GetTick();
 			calculate_orientation();
-			uint16_t a = HAL_GetTick() - tick;
-			uint16_t b = 0;
 		}
 		if (!(cnt % CNT_RESET))
 		{

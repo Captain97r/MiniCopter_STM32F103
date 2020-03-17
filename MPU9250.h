@@ -132,7 +132,7 @@
 #define SIGNAL_PATH_RESET	0x68
 #define MOT_DETECT_CTRL		0x69
 #define USER_CTRL			0x6A  // Bit 7 enable DMP, bit 3 reset DMP
-#define PWR_MGMT_1			0x6B // Device defaults to the SLEEP mode
+#define PWR_MGMT_1			0x6B  // Device defaults to the SLEEP mode
 #define PWR_MGMT_2			0x6C
 #define DMP_BANK			0x6D  // Activates a specific bank in the DMP
 #define DMP_RW_PNT			0x6E  // Set read/write pointer to a specific start address in specified DMP bank
@@ -142,7 +142,7 @@
 #define FIFO_COUNTH			0x72
 #define FIFO_COUNTL			0x73
 #define FIFO_R_W			0x74
-#define WHO_AM_I_MPU9250	0x75 // Should return 0x71
+#define WHO_AM_I_MPU9250	0x75  // Should return 0x71
 #define XA_OFFSET_H			0x77
 #define XA_OFFSET_L			0x78
 #define YA_OFFSET_H			0x7A
@@ -150,9 +150,6 @@
 #define ZA_OFFSET_H			0x7D
 #define ZA_OFFSET_L			0x7E
 
-// Using the MSENSR-9250 breakout board, ADO is set to 0 
-// Seven-bit device address is 110100 for ADO = 0 and 110101 for ADO = 1
-//mbed uses the eight-bit device address, so shift seven-bit addresses left by one!
 #define ADO 0
 #if ADO
 #define MPU9250_ADDRESS 0x69<<1  // Device address when ADO = 1
@@ -355,7 +352,7 @@ typedef struct
 	sensor_data_t				offset;
 	sensor_data_t				calibration;
 	float						resolution;
-} sensor_t;
+} MPU9250_sensor_t;
 
 typedef struct
 {
@@ -373,9 +370,9 @@ typedef struct
 typedef struct
 {
 	I2C_HandleTypeDef*			hi2c;
-	sensor_t					accelerometer;
-	sensor_t					gyroscope;
-	sensor_t					magnetometer;
+	MPU9250_sensor_t			accelerometer;
+	MPU9250_sensor_t			gyroscope;
+	MPU9250_sensor_t			magnetometer;
 	float						temperature;
 } MPU9250_t;
 
@@ -396,6 +393,8 @@ void MPU9250_get_accel();
 void MPU9250_get_gyro();
 
 void MPU9250_get_mag();
+
+void MPU9250_get_mag_raw(int16_t* raw);
 
 void MPU9250_get_temp();
 

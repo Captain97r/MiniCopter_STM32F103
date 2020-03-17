@@ -413,9 +413,65 @@ void MPU9250_get_mag()
 		if (!(rawData[6] & AK8963_HOFL)) 
 		{
 			// Check if magnetic sensor overflow set, if not then report data
-			mpu9250.magnetometer.data.x = ((int16_t)(((int16_t)rawData[0] << 8) | rawData[1])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.x - mpu9250.magnetometer.offset.x;
-			mpu9250.magnetometer.data.y = ((int16_t)(((int16_t)rawData[2] << 8) | rawData[3])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.y - mpu9250.magnetometer.offset.y;
-			mpu9250.magnetometer.data.z = ((int16_t)(((int16_t)rawData[4] << 8) | rawData[5])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.z - mpu9250.magnetometer.offset.z;
+			// Without calibration matrix
+			//mpu9250.magnetometer.data.x = ((int16_t)(((int16_t)rawData[0] << 8) | rawData[1])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.x - mpu9250.magnetometer.offset.x;
+			//mpu9250.magnetometer.data.y = ((int16_t)(((int16_t)rawData[2] << 8) | rawData[3])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.y - mpu9250.magnetometer.offset.y;
+			//mpu9250.magnetometer.data.z = ((int16_t)(((int16_t)rawData[4] << 8) | rawData[5])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.z - mpu9250.magnetometer.offset.z;
+			
+			// With calibration matrix
+			
+			float calibration_matrix[9] = { 
+				1.217766, -0.112446, -0.079798,
+				-0.112446, 1.449998, -0.081741,
+				-0.079798, -0.081741, 1.444874
+			};
+			
+			float bias[3] = { 95.723293, 61.318848, -115.324883 };
+			
+			float uncalibrated_values[3] = { 0, 0, 0 };
+			uncalibrated_values[0] = ((int16_t)(((int16_t)rawData[0] << 8) | rawData[1])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.x - mpu9250.magnetometer.offset.x;
+			uncalibrated_values[1] = ((int16_t)(((int16_t)rawData[2] << 8) | rawData[3])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.y - mpu9250.magnetometer.offset.y;
+			uncalibrated_values[2] = ((int16_t)(((int16_t)rawData[4] << 8) | rawData[5])) * mpu9250.magnetometer.resolution * mpu9250.magnetometer.calibration.z - mpu9250.magnetometer.offset.z;
+			
+			for (int i = 0; i < 3; ++i) 
+				uncalibrated_values[i] = uncalibrated_values[i] - bias[i];
+			
+			float result[3] = { 0, 0, 0 };
+			
+			for (int i = 0; i < 3; ++i)
+				for (int j = 0; j < 3; ++j)
+					result[i] += calibration_matrix[i * 3 + j] * uncalibrated_values[j];
+			
+			mpu9250.magnetometer.data.x = result[0];
+			mpu9250.magnetometer.data.y = result[1];
+			mpu9250.magnetometer.data.z = result[2];
+		}
+	}
+}
+
+void MPU9250_get_mag_raw(int16_t* raw)
+{
+	uint8_t rawData[7] = { 0 }; 																		// x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
+	uint8_t ready = 0;
+	AK8963_read_reg(AK8963_ST1, &ready);
+	if (ready & AK8963_DRDY) 
+	{
+		//ready = (uint8_t)0;
+		// Read the six raw data and ST2 registers sequentially into data array
+		AK8963_read_reg(AK8963_ZOUT_L, &rawData[5]);
+		AK8963_read_reg(AK8963_ZOUT_H, &rawData[4]);
+		AK8963_read_reg(AK8963_YOUT_L, &rawData[3]);
+		AK8963_read_reg(AK8963_YOUT_H, &rawData[2]);
+		AK8963_read_reg(AK8963_XOUT_L, &rawData[1]);
+		AK8963_read_reg(AK8963_XOUT_H, &rawData[0]);
+		AK8963_read_reg(AK8963_ST2, &rawData[6]);
+
+		if (!(rawData[6] & AK8963_HOFL)) 
+		{
+			// Check if magnetic sensor overflow set, if not then report data
+			raw[0] = ((int16_t)(((int16_t)rawData[0] << 8) | rawData[1]));
+			raw[1] = ((int16_t)(((int16_t)rawData[2] << 8) | rawData[3]));
+			raw[2] = ((int16_t)(((int16_t)rawData[4] << 8) | rawData[5]));
 		}
 	}
 }

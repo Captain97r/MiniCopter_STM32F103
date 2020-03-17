@@ -51,10 +51,10 @@ typedef struct
 
 typedef struct 
 {
-	motor_t front;
-	motor_t right;
-	motor_t back;
-	motor_t left;
+	motor_t rf;
+	motor_t lf;
+	motor_t lb;
+	motor_t rb;
 	
 	FLY_MODE mode;
 	actuators_t actuator;
@@ -64,8 +64,10 @@ typedef struct
 
 copter_t copter;
 
-void copter_motor_init(motor_t *f, motor_t *r, motor_t *b, motor_t *l);
+void copter_init(TIM_HandleTypeDef* htim, uint16_t rf, uint16_t lf, uint16_t lb, uint16_t rb);
 
 void copter_handle_actuators();
+
+void copter_update_attitude();
 
 #endif /*__copter_H */
