@@ -22,29 +22,36 @@
 #define MOTOR_MAX_THRUST_N		0.15
 #define LIFT_CONSTANT			MOTOR_MAX_THRUST_N / (MOTOR_MAX_RPM * MOTOR_MAX_RPM)
 #define DRAG_CONSTANT			0.1 * LIFT_CONSTANT
-#define ROTOR_HALF_DISTANCE		5.5
+#define ROTOR_HALF_DISTANCE		0.055
 
 #define I_XX					1E-5
 #define I_YY					1E-5
 #define I_ZZ					0.5E-4
 
 
-void copter_motor_init(motor_t *f, motor_t *r, motor_t *b, motor_t *l)
+void copter_init(TIM_HandleTypeDef* htim, uint16_t rf, uint16_t lf, uint16_t lb, uint16_t rb)
 {
-	copter.front = *f;
-	copter.right = *r;
-	copter.back = *b;
-	copter.left = *l;
+	copter.rf.htim = htim;
+	copter.lf.htim = htim;
+	copter.lb.htim = htim;
+	copter.rb.htim = htim;
 	
-	motor_set_speed(&copter.front, 0);
-	motor_set_speed(&copter.right, 0);
-	motor_set_speed(&copter.back, 0);
-	motor_set_speed(&copter.left, 0);
+	copter.rf.channel = rf;
+	copter.lf.channel = lf;
+	copter.lb.channel = lb;
+	copter.rb.channel = rb;
+	
+	motor_set_speed(&copter.rf, 0);
+	motor_set_speed(&copter.lf, 0);
+	motor_set_speed(&copter.lb, 0);
+	motor_set_speed(&copter.rb, 0);
 	
 	copter.orientation.quat.w = 1.0;
 	copter.orientation.quat.x = 0.0;
 	copter.orientation.quat.y = 0.0;
 	copter.orientation.quat.z = 0.0;
+	
+	copter.mode = FLY_MODE_MANUAL;
 }
 
 
@@ -60,7 +67,10 @@ void handle_land()
 
 void handle_manual()
 {
-	
+	motor_set_speed(&copter.rf, (uint8_t)(1 * copter.actuator.thrust));
+	motor_set_speed(&copter.lf, (uint8_t)(1 * copter.actuator.thrust));
+	motor_set_speed(&copter.lb, (uint8_t)(1 * copter.actuator.thrust));
+	motor_set_speed(&copter.rb, (uint8_t)(1 * copter.actuator.thrust));
 }
 
 void copter_handle_actuators()
@@ -68,6 +78,7 @@ void copter_handle_actuators()
 	switch (copter.mode)
 	{
 	case FLY_MODE_STABILIZED:
+		copter_update_attitude();
 	case FLY_MODE_MANUAL:
 		handle_manual();
 		break;
@@ -91,15 +102,14 @@ void copter_update_attitude()
 	float tau_psi		= (KD_PSI		* (YAW_SPEED_DESIRED	- copter.speed.yawspeed)	+ KP_PHI * (copter.actuator.yaw		- copter.orientation.euler.yaw))	* I_ZZ;
 	
 	// ... and motor speeds
-	
 	int front_motor_speed_d = (float)sqrt((thrust_d / (4 * LIFT_CONSTANT)) - (tau_thetta	/ (2 * LIFT_CONSTANT * ROTOR_HALF_DISTANCE))	- (tau_psi / (4 * DRAG_CONSTANT)));
 	int right_motor_speed_d = (float)sqrt((thrust_d / (4 * LIFT_CONSTANT)) - (tau_phi		/ (2 * LIFT_CONSTANT * ROTOR_HALF_DISTANCE))	+ (tau_psi / (4 * DRAG_CONSTANT)));
 	int back_motor_speed_d	= (float)sqrt((thrust_d / (4 * LIFT_CONSTANT)) + (tau_thetta	/ (2 * LIFT_CONSTANT * ROTOR_HALF_DISTANCE))	- (tau_psi / (4 * DRAG_CONSTANT)));
 	int left_motor_speed_d	= (float)sqrt((thrust_d / (4 * LIFT_CONSTANT)) + (tau_phi		/ (2 * LIFT_CONSTANT * ROTOR_HALF_DISTANCE))	+ (tau_psi / (4 * DRAG_CONSTANT)));
 	
 	// Assume that max speed of motor is 100 (timer counter period), so transform the value and assign it to the corresponding motor
-	motor_set_speed(&copter.front,	(uint8_t)((100 * front_motor_speed_d)	/ MOTOR_MAX_RPM));
-	motor_set_speed(&copter.right,	(uint8_t)((100 * right_motor_speed_d)	/ MOTOR_MAX_RPM));
-	motor_set_speed(&copter.back,	(uint8_t)((100 * back_motor_speed_d)	/ MOTOR_MAX_RPM));
-	motor_set_speed(&copter.left,	(uint8_t)((100 * left_motor_speed_d)	/ MOTOR_MAX_RPM));
+	motor_set_speed(&copter.rf,	(uint8_t)((100 * front_motor_speed_d)	/ MOTOR_MAX_RPM));
+	motor_set_speed(&copter.lf,	(uint8_t)((100 * right_motor_speed_d)	/ MOTOR_MAX_RPM));
+	motor_set_speed(&copter.lb,	(uint8_t)((100 * back_motor_speed_d)	/ MOTOR_MAX_RPM));
+	motor_set_speed(&copter.rb,	(uint8_t)((100 * left_motor_speed_d)	/ MOTOR_MAX_RPM));
 }
