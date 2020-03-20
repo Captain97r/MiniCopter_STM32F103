@@ -13,8 +13,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 
 void battery_calculate_voltage()
 {
-	float vref = 2 * VDD_VOLTAGE * battery.buf[1] / ADC_FULL_VALUE;
-	float vbat = 2.0 * vref * median / ADC_FULL_VALUE - 0.11;
+	float vref = VDD_VOLTAGE * battery.buf[1] / ADC_FULL_VALUE;
+	float vbat = 2.65 * 2.0 * vref * median / ADC_FULL_VALUE;
 	battery.voltage_mult_1000 = (uint16_t)(vbat * 1000);
 	battery.data_rdy = 1;
 }
