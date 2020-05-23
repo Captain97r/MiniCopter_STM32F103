@@ -51,12 +51,20 @@ typedef struct
 
 typedef struct 
 {
+	int8_t roll;
+	int8_t pitch;
+	int8_t yaw;
+} trimmer_t;
+
+typedef struct 
+{
 	motor_t rf;
 	motor_t lf;
 	motor_t lb;
 	motor_t rb;
 	
 	FLY_MODE mode;
+	trimmer_t trimm;
 	actuators_t actuator;
 	orientation_t orientation;
 	speed_t speed;

@@ -10,7 +10,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * COPYRIGHT(c) 2019 STMicroelectronics
+  * COPYRIGHT(c) 2020 STMicroelectronics
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -57,6 +57,9 @@
 #include "copter.h"
 #include "math.h"
 #include <stdlib.h>
+#include "accel_calibration.h"
+#include "mag_calibration.h"
+
 
 /* USER CODE END Includes */
 
@@ -64,6 +67,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+
 
 extern battery_t battery;
 
@@ -79,9 +83,24 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
+
+
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+
+void i2c_scan(I2C_HandleTypeDef *hi2c, uint8_t* addr)
+{
+	uint8_t ptr = 0;
+	for (uint8_t i = 1; i < 255; i++)
+	{
+		uint8_t data = 0;
+		if (HAL_I2C_Master_Transmit(hi2c, (uint16_t)i, (uint8_t *)&data, 1, 1000) == HAL_OK)
+		{
+			addr[ptr++] = i;
+		}
+	}
+}
 
 /* USER CODE END 0 */
 
@@ -99,10 +118,10 @@ int main(void)
   /* MCU Configuration----------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-   HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
-	
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -121,41 +140,43 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-	
-	
+
 	// Sensors init
 	//     MPU9250
 	HAL_GPIO_WritePin(AD0_GPIO_Port, AD0_Pin, GPIO_PIN_RESET);
 	HAL_Delay(50);
 	
+	uint8_t addr[10] = { 0 };
+    i2c_scan(&hi2c1, addr);
+	
 	MPU9250_init_t mpu9250_init_s = 
 	{ 
-		.hi2c               = &hi2c1,
-		.accel_scale		= AFS_2G,
-		.gyro_scale		    = GFS_250DPS,
-		.mag_scale		    = MFS_16BITS,
-		.mag_freq			= MAG_FREQ_100HZ,
-		.accel_bandwidth	= ACCEL_BANDWIDTH_DEFAULT,
-		.accel_freq		    = ACCEL_FREQ_DEFAULT,
-		.gyro_bandwidth	    = GYRO_BANDWIDTH_DEFAULT,
-		.gyro_freq		    = GYRO_FREQ_DEFAULT
+		.hi2c = &hi2c1,
+		.accel_scale = AFS_2G,
+		.gyro_scale = GFS_250DPS,
+		.mag_scale = MFS_16BITS,
+		.mag_freq = MAG_FREQ_100HZ,
+		.accel_bandwidth = ACCEL_BANDWIDTH_DEFAULT,
+		.accel_freq = ACCEL_FREQ_DEFAULT,
+		.gyro_bandwidth = GYRO_BANDWIDTH_DEFAULT,
+		.gyro_freq = GYRO_FREQ_DEFAULT
 	};
-	
 	HAL_StatusTypeDef ok = MPU9250_init(&mpu9250_init_s);
+	accelerometer_calibration();
+	mag_calibration();
 	
 	//     BMP280
 	BMP280_init_t bmp280_init = 
 	{ 
-		.hi2c               = &hi2c1,
-		.mode               = BMP280_NORMAL_MODE,
-		.filter_coeff       = BMP280_FILTER_COEF_16,
-		.ost                = BMP280_TEMP_ULTRA_HIGH_RES,
-		.osp                = BMP280_PRESS_ULTRA_HIGH_RES,
-		.stby_time          = BMP280_STANDBY_05_MS
+		.hi2c = &hi2c1,
+		.mode = BMP280_NORMAL_MODE,
+		.filter_coeff = BMP280_FILTER_COEF_16,
+		.ost = BMP280_TEMP_LOW_POWER,
+		.osp = BMP280_PRESS_ULTRA_HIGH_RES,
+		.stby_time = BMP280_STANDBY_05_MS
 	};
 	
 	ok = BMP280_init(&bmp280_init);
-	
 	
 	
 	// BT connectivity init
@@ -171,33 +192,26 @@ int main(void)
 	copter_init(&htim1, TIM_CHANNEL_1, TIM_CHANNEL_4, TIM_CHANNEL_3, TIM_CHANNEL_2);
 	
 	
+	// Battery Level Measurement init
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &battery.buf, ADC_BUFFER_SIZE);
+	
+	
 	// Sheduler timer init
 	HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
 	
 	
-	// Battery Level Measurement init
-	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &battery.buf, ADC_BUFFER_SIZE);
-	
-	int32_t temperature;
-	uint32_t pressure;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	while (1)
-	{
-		int32_t temp;
-		HAL_StatusTypeDef status = BMP280_read_temp_raw(&temp);
-		temperature = BMP280_get_temp_celsius_x_100(temp);
-		
-		int32_t press;
-		status = BMP280_read_press_raw(&press);
-		pressure = BMP280_get_pressure_mPa(press);
+  while (1)
+  {
+
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
 
-	}
+  }
   /* USER CODE END 3 */
 
 }

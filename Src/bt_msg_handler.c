@@ -41,8 +41,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void bt_message_send()
 {
 	uint16_t msg[15] = {
-			9,
-		(int16_t)(battery.voltage_mult_1000 / 10.0),
+		9,
+		(int16_t)(copter.orientation.euler.pitch * 100),
+		(int16_t)(copter.orientation.euler.roll * 100),
+		(int16_t)(copter.orientation.euler.yaw * 100),
 	};
 	
 	HAL_UART_Transmit(message.huart, (uint8_t *)msg, 30, 1000);
