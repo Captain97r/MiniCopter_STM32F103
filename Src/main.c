@@ -146,6 +146,7 @@ int main(void)
 	HAL_GPIO_WritePin(AD0_GPIO_Port, AD0_Pin, GPIO_PIN_RESET);
 	HAL_Delay(50);
 	
+	
 	uint8_t addr[10] = { 0 };
     i2c_scan(&hi2c1, addr);
 	
@@ -162,8 +163,12 @@ int main(void)
 		.gyro_freq = GYRO_FREQ_DEFAULT
 	};
 	HAL_StatusTypeDef ok = MPU9250_init(&mpu9250_init_s);
-	accelerometer_calibration();
-	mag_calibration();
+	//accelerometer_calibration();
+	//mag_calibration();
+	
+	
+	//save_calibration_to_flash();
+	load_calibration_from_flash();
 	
 	//     BMP280
 	BMP280_init_t bmp280_init = 

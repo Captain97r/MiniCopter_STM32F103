@@ -852,10 +852,21 @@ void mag_calibration()
 	float maxval, norm, btqb, hm, norm1, norm2, norm3, J, hmb = 0;
 	
 	int16_t total_samples = 2000;
+	
+	// Set correction values to default
+	for (uint8_t i = 0; i < 3; i++)
+		for (uint8_t j = 0; j < 3; j++)
+			mpu9250.magnetometer.dcm[i][j] = 0;
+	
+	mpu9250.magnetometer.dcm[0][0] = 1;
+	mpu9250.magnetometer.dcm[1][1] = 1;
+	mpu9250.magnetometer.dcm[2][2] = 1;
+	
+	mpu9250.magnetometer.offset.x = 0;
+	mpu9250.magnetometer.offset.y = 0;
+	mpu9250.magnetometer.offset.z = 0;
 
-	//float data[total_samples][3];
 	int16_t data[total_samples][3];
-	//float D[10 * total_samples];
 	for (uint16_t i = 0; i < total_samples; i++)
 	{
 		MPU9250_get_mag();
@@ -863,27 +874,9 @@ void mag_calibration()
 		data[i][0] = mpu9250.magnetometer.data.x * 100;
 		data[i][1] = mpu9250.magnetometer.data.y * 100;
 		data[i][2] = mpu9250.magnetometer.data.z * 100;
-//		x = mpu9250.magnetometer.data.x;
-//		y = mpu9250.magnetometer.data.y;
-//		z = mpu9250.magnetometer.data.z;
-//		
-//		D[i] = x * x;
-//		D[total_samples + i] = y * y;
-//		D[total_samples * 2 + i] = z * z;
-//		D[total_samples * 3 + i] = 2.0 * y * z;
-//		D[total_samples * 4 + i] = 2.0 * x * z;
-//		D[total_samples * 5 + i] = 2.0 * x * y;
-//		D[total_samples * 6 + i] = 2.0 * x;
-//		D[total_samples * 7 + i] = 2.0 * y;
-//		D[total_samples * 8 + i] = 2.0 * z;
-//		D[total_samples * 9 + i] = 1.0;
 		
 		HAL_Delay(10);
 	}
- 
-	// allocate memory for matrix S
-	//float S[10 * 10] = { 0 };
-	//Matrix_x_Its_Transpose(S, D, 10, total_samples);
 	
 	
 	// Memory optimized Matrix_x_Its_Transpose based on measurements

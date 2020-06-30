@@ -4,6 +4,20 @@
 
 void accelerometer_calibration()
 {
+	
+	// Set correction values to default
+	for(uint8_t i = 0 ; i < 3 ; i++)
+		for(uint8_t j = 0 ; j < 3 ; j++)
+			mpu9250.accelerometer.dcm[i][j] = 0;
+	
+	mpu9250.accelerometer.dcm[0][0] = 1;
+	mpu9250.accelerometer.dcm[1][1] = 1;
+	mpu9250.accelerometer.dcm[2][2] = 1;
+	
+	mpu9250.accelerometer.offset.x = 0;
+	mpu9250.accelerometer.offset.y = 0;
+	mpu9250.accelerometer.offset.z = 0;
+	
 	float accel_corr_ref[6][3] = {  { G_CONST,      0,          0       },          // nose up
                                     {-G_CONST,      0,          0       },          // nose down
                                     { 0,            G_CONST,    0       },          // left side down

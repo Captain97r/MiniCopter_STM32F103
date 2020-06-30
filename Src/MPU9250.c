@@ -892,17 +892,17 @@ void load_calibration_from_flash()
 	
 	for (uint8_t i = 0; i < 3; i++)
 		for (uint8_t j = 0; j < 3; j++)
-			mpu9250.accelerometer.dcm[i][j] = data_from_flash[i * 3 + j];
+			mpu9250.accelerometer.dcm[i][j] = *(float *)(&data_from_flash[i * 3 + j]);
 	
-	mpu9250.accelerometer.offset.x = data_from_flash[9];
-	mpu9250.accelerometer.offset.y = data_from_flash[10];
-	mpu9250.accelerometer.offset.z = data_from_flash[11];
+	mpu9250.accelerometer.offset.x = *(float *)(&data_from_flash[9]);
+	mpu9250.accelerometer.offset.y = *(float *)(&data_from_flash[10]);
+	mpu9250.accelerometer.offset.z = *(float *)(&data_from_flash[11]);
 	
 	for (uint8_t i = 0; i < 3; i++)
 		for (uint8_t j = 0; j < 3; j++)
-			mpu9250.magnetometer.dcm[i][j] = data_from_flash[i * 3 + j + 12];
+			mpu9250.magnetometer.dcm[i][j] = *(float *)(&data_from_flash[i * 3 + j + 12]);
 	
-	mpu9250.magnetometer.offset.x = data_from_flash[21];
-	mpu9250.magnetometer.offset.y = data_from_flash[22];
-	mpu9250.magnetometer.offset.z = data_from_flash[23];
+	mpu9250.magnetometer.offset.x = *(float *)(&data_from_flash[21]);
+	mpu9250.magnetometer.offset.y = *(float *)(&data_from_flash[22]);
+	mpu9250.magnetometer.offset.z = *(float *)(&data_from_flash[23]);
 }
