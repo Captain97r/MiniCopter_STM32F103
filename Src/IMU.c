@@ -12,18 +12,29 @@
 float beta = BETA_DEF;  								// 2 * proportional gain (Kp)
 float delta_t = 1 / SAMPLE_FREQ_HZ; 					// integration interval for both filter schemes
 
+unsigned long _last_time = 0;
+uint8_t inited = 0;
+
 // for PX4 algo
-float		_w_accel = 0.0f;
-float		_w_mag = 0.0f;
-float		_w_ext_hdg = 0.0f;
-float		_w_gyro_bias = 0.0f;
-float		_mag_decl = 0.0f;
-float		_bias_max = 0.0f;
+float		_mag_decl		= -0.193f;
+float		_w_accel		= 3.0f;
+float		_w_mag			= 0.0f;
+float		_w_gyro_bias	= 0.1f;
+float		_bias_max		= 0.05f;
+
+Vector3f _gyro_bias;
+
+Dcmf rm;
 
 void MadgwickAHRSupdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
 void MadgwickAHRSupdateIMU(float ax, float ay, float az, float gx, float gy, float gz);
 void SimpleUpdateIMU(float ax, float ay, float az, float gx, float gy, float gz);
-void PX4_altitude_estimator_c(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
+void PX4_altitude_estimator_c_update(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
+void complementary_filter(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
+
+void handleAccelData(Vector3f acc, Vector3f mag, Dcmf result);
+
+void handleGyroData(Vector3f gyr, float t, Dcmf result);
 
 void toEuler();
 float invSqrt(float x);
@@ -34,213 +45,303 @@ void calculate_orientation()
 	MPU9250_get_gyro();
 	MPU9250_get_mag();
 	MPU9250_get_temp();
-//	MadgwickAHRSupdate(mpu9250.accelerometer.data.x, mpu9250.accelerometer.data.y,  mpu9250.accelerometer.data.z,
-//					   mpu9250.gyroscope.data.x,	 mpu9250.gyroscope.data.y,		mpu9250.gyroscope.data.z,
-//					   mpu9250.magnetometer.data.x,	 mpu9250.magnetometer.data.y,	mpu9250.magnetometer.data.z);
 	
-	//SimpleUpdateIMU(	mpu9250.accelerometer.data.x, mpu9250.accelerometer.data.y, mpu9250.accelerometer.data.z,
-	//						mpu9250.gyroscope.data.x,		mpu9250.gyroscope.data.y,		mpu9250.gyroscope.data.z);
+	complementary_filter(mpu9250.accelerometer.data.x,
+		mpu9250.accelerometer.data.y,
+		mpu9250.accelerometer.data.z,
+									mpu9250.gyroscope.data.x,		mpu9250.gyroscope.data.y,		mpu9250.gyroscope.data.z,
+									mpu9250.magnetometer.data.x,	 mpu9250.magnetometer.data.y,	mpu9250.magnetometer.data.z);
 	
-	PX4_altitude_estimator_c(mpu9250.accelerometer.data.x, mpu9250.accelerometer.data.y, mpu9250.accelerometer.data.z,
-							 mpu9250.gyroscope.data.x,	 mpu9250.gyroscope.data.y,		mpu9250.gyroscope.data.z,
-							 mpu9250.magnetometer.data.x,	 mpu9250.magnetometer.data.y,	mpu9250.magnetometer.data.z);
+//	MadgwickAHRSupdate(mpu9250.accelerometer.data.x,	mpu9250.accelerometer.data.y,	mpu9250.accelerometer.data.z,
+//					   mpu9250.gyroscope.data.x,		mpu9250.gyroscope.data.y,		mpu9250.gyroscope.data.z,
+//					   mpu9250.magnetometer.data.x,		mpu9250.magnetometer.data.y,	mpu9250.magnetometer.data.z);
 	
-	//toEuler();
-	float mx = mpu9250.magnetometer.data.x;
-	float my = mpu9250.magnetometer.data.y;
-	float mz = mpu9250.magnetometer.data.z;
-	//copter.orientation.heading = atan2f(my * cos(copter.orientation.euler.roll) + mz * sin(copter.orientation.euler.roll), 
-	//	mx * cos(copter.orientation.euler.pitch) + my * sin(copter.orientation.euler.roll) * sin(copter.orientation.euler.pitch) - mz * cos(copter.orientation.euler.roll) * sin(copter.orientation.euler.pitch));
+	toEuler();
 }
 
-
-//void PX4_attitude_estimator(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
-//{
-//	/// Init
+void PX4_altitude_estimator_c_init(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
+{
+	
+	_last_time = HAL_GetTick();
+	inited = 1;
+//	Vector3f acc = { ax, ay, az };
+//	Vector3f gyr = { gx, gy, gz };
+//	Vector3f mag = { mx, my, mz };
+//	
+//	if (vector_length(acc) > 20.0f || vector_length(gyr) > 5.0f || vector_length(mag) > 75.0f)
+//		return;
 //	
 //	// Rotation matrix can be easily constructed from acceleration and mag field vectors
 //	// 'k' is Earth Z axis (Down) unit vector in body frame
-//	Vector3f k = -_accel;
-//	k.normalize();
-//
+//	Vector3f k = { -ax, -ay, -az };
+//	vector_normalize(k);
+//	
 //	// 'i' is Earth X axis (North) unit vector in body frame, orthogonal with 'k'
-//	Vector3f i = (_mag - k * (_mag * k));
-//	i.normalize();
-//
+//	vector_normalize(mag);
+//	
+//	Vector3f t1, t2, i;
+//	vector_mult(mag, k, t1);
+//	vector_mult(k, t1, t2);
+//	vector_substract(mag, t2, i);
+//	vector_normalize(i);
+//	
 //	// 'j' is Earth Y axis (East) unit vector in body frame, orthogonal with 'k' and 'i'
-//	Vector3f j = k % i;
-//
+//	Vector3f j;
+//	vector_cross(k, i, j);
+//	
+//	float head = atan2(mag[1], mag[0]) * 180 / 3.14;
+//	
 //	// Fill rotation matrix
 //	Dcmf R;
-//	R.setRow(0, i);
-//	R.setRow(1, j);
-//	R.setRow(2, k);
-//
-//	// Convert to quaternion
-//	_q = R;
-//
-//	// Compensate for magnetic declination
-//	Quatf decl_rotation = Eulerf(0.0f, 0.0f, _mag_decl);
-//	_q = _q * decl_rotation;
-//
-//	_q.normalize();
-//
-//	/// Update
-//	
-//	Vector3f corr;
-//	float spinRate = _gyro.length();
-//
-//	// Magnetometer correction
-//	// Project mag field vector to global frame and extract XY component
-//	Vector3f mag_earth = _q.conjugate(_mag);
-//	float mag_err = wrap_pi(atan2f(mag_earth(1), mag_earth(0)) - _mag_decl);
-//	float gainMult = 1.0f;
-//	const float fifty_dps = 0.873f;
-//
-//	if (spinRate > fifty_dps) {
-//		gainMult = math::min(spinRate / fifty_dps, 10.0f);
-//	}
-//
-//	// Project magnetometer correction to body frame
-//	corr += _q.conjugate_inversed(Vector3f(0.0f, 0.0f, -mag_err)) * _w_mag * gainMult;
-//
-//	_q.normalize();
-//
-//	// Accelerometer correction
-//	// Project 'k' unit vector of earth frame to body frame
-//	// Vector3f k = _q.conjugate_inversed(Vector3f(0.0f, 0.0f, 1.0f));
-//	// Optimized version with dropped zeros
-//	Vector3f k(
-//		2.0f * (_q(1) * _q(3) - _q(0) * _q(2)),
-//		2.0f * (_q(2) * _q(3) + _q(0) * _q(1)),
-//		(_q(0) * _q(0) - _q(1) * _q(1) - _q(2) * _q(2) + _q(3) * _q(3)));
-//
-//	// If we are not using acceleration compensation based on GPS velocity,
-//	// fuse accel data only if its norm is close to 1 g (reduces drift).
-//	const float accel_norm_sq = _accel.norm_squared();
-//	const float upper_accel_limit = 9.81 * 1.1f;
-//	const float lower_accel_limit = 9.81 * 0.9f;
-//
-//	if (accel_norm_sq > lower_accel_limit * lower_accel_limit &&
-//			  accel_norm_sq < upper_accel_limit * upper_accel_limit) {
-//		corr += (k % (_accel - _pos_acc).normalized()) * _w_accel;
-//	}
-//
-//	// Gyro bias estimation
-//	if(spinRate < 0.175f) {
-//		_gyro_bias += corr * (_w_gyro_bias * dt);
-//
-//		for (int i = 0; i < 3; i++) {
-//			_gyro_bias(i) = math::constrain(_gyro_bias(i), -_bias_max, _bias_max);
-//		}
-//
-//	}
-//
-//	_rates = _gyro + _gyro_bias;
-//
-//	// Feed forward gyro
-//	corr += _rates;
-//
-//	// Apply correction to state
-//	_q += _q.derivative1(corr) * dt;
-//
-//	// Normalize quaternion
-//	_q.normalize();
-//
-//	if (!(PX4_ISFINITE(_q(0)) && PX4_ISFINITE(_q(1)) &&
-//	      PX4_ISFINITE(_q(2)) && PX4_ISFINITE(_q(3)))) {
-//		// Reset quaternion to last good state
-//		_q = q_last;
-//		_rates.zero();
-//		_gyro_bias.zero();
-//		return false;
-//	}
-//
-//	//_q.zero();
-//}
+//	matrix_set_row(&R, &i, 0);	
+//	matrix_set_row(&R, &j, 1);
+//	matrix_set_row(&R, &k, 2);
+}
 
-
-void PX4_altitude_estimator_c(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
+void PX4_altitude_estimator_c_update(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
+	if (inited == 0)
+	{
+		PX4_altitude_estimator_c_init(ax, ay, az, gx, gy, gz, mx, my, mz);
+		return;
+	}
+	
+	float dt = (HAL_GetTick() - _last_time) * 0.001;
+	_last_time = HAL_GetTick();
+	
 	Vector3f acc = { ax, ay, az };
 	Vector3f gyr = { gx, gy, gz };
 	Vector3f mag = { mx, my, mz };
 	
-	if (vector_length(acc) > 20.0f || vector_length(gyr) > 5.0f || vector_length(mag) > 75.0f)
-		return;
+	Quaternion q;
+	q[0] = copter.orientation.quat.w;
+	q[1] = copter.orientation.quat.x;
+	q[2] = copter.orientation.quat.y;
+	q[3] = copter.orientation.quat.z;
 	
-	// Rotation matrix can be easily constructed from acceleration and mag field vectors
-	// 'k' is Earth Z axis (Down) unit vector in body frame
-	Vector3f k = { -ax, -ay, -az };
-	vector_normalize(k);
+	// Angular rate of correction
+    Vector3f corr;
+    
+	float spinRate = sqrt(gx * gx + gy * gy + gz * gz);
+    
+	// Project mag field vector to global frame and extract XY component
+	Vector3f mag_earth;
+	conjugate(q, mag, mag_earth);
+	float mag_err = wrap_pi(atan2(mag_earth[1], mag_earth[0]) - _mag_decl);
+	float gainMult = 1.0f;
+	float fifty_dps = 0.873f;
+
+	//if (spinRate > fifty_dps) {
+	//  gainMult = math::min(spinRate / fifty_dps, 10.0f);
+	//}
+
+	// Project magnetometer correction to body frame
+	Vector3f m, corr_m;
+	m[0] = 0;
+	m[1] = 0;
+	m[2] = -mag_err;
+    
+	conjugate_inversed(q, m, corr_m);
+	for (int i = 0; i < 3; i++)
+		corr[i] += corr_m[i] * _w_mag * gainMult;
+    
+	quat_normalize(q);
+    
+	// Accelerometer correction
+	// Project 'k' unit vector of earth frame to body frame
+	//float[] t = new float[3];
+	//t[2] = -1.0f;
+	//float[] k = _q.conjugate_inversed(t);
+	// Optimized version with dropped zeros
+	Vector3f k;
+    
+	k[0] = -2.0f * (q[1] * q[3] - q[0] * q[2]);
+	k[1] = -2.0f * (q[2] * q[3] + q[0] * q[1]);
+	k[2] = -(q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
+    
+  
+	// If we are not using acceleration compensation based on GPS velocity,
+	// fuse accel data only if its norm is close to 1 g (reduces drift).
+	float accel_norm_sq = ax * ax + ay * ay + az * az;
+	float upper_accel_limit = 9.81 * 1.1f;
+	float lower_accel_limit = 9.81 * 0.9f;
+  
+	if (((accel_norm_sq > lower_accel_limit * lower_accel_limit) &&
+	          (accel_norm_sq < upper_accel_limit * upper_accel_limit))) {
+  
+		Vector3f acc_norm;
+		for (int i = 0; i < 3; i++) 
+			acc_norm[i] = acc[i] / sqrt(accel_norm_sq);
+       
+        
+        
+		Vector3f corr_a;
+		vector_cross(k, acc_norm, corr_a);
+		for (int i = 0; i < 3; i++) 
+			corr[i] += corr_a[i] * _w_accel; 
+	}
+  
+  
+	// Gyro bias estimation
+	if(spinRate < 0.175f) {
+		for (int i = 0; i < 3; i++) {
+			_gyro_bias[i] += corr[i] * (_w_gyro_bias * dt);
+  
+			if (_gyro_bias[i] > _bias_max)
+				_gyro_bias[i] = _bias_max;
+			if (_gyro_bias[i] < -_bias_max)
+				_gyro_bias[i] = -_bias_max;
+		}
+  
+	}
+    
+	Vector3f rates;
+    
+	for (int i = 0; i < 3; i++)
+		rates[i] = gyr[i] + _gyro_bias[i];
+  
+	// Feed forward gyro
+	for(int i = 0 ; i < 3 ; i++)
+	  corr[i] += rates[i];
+  
+	Quaternion q_derivative;
+	derivative(q, corr, q_derivative);
+	// Apply correction to state
+	for(int i = 0 ; i < 4 ; i++)
+	  q[i] += q_derivative[i] * dt;
+  
+	// Normalize quaternion
+	quat_normalize(q);
 	
-	// 'i' is Earth X axis (North) unit vector in body frame, orthogonal with 'k'
-	vector_normalize(mag);
-	
-	Vector3f t1, t2, i;
-	vector_mult(mag, k, t1);
-	vector_mult(k, t1, t2);
-	vector_substract(mag, t2, i);
-	vector_normalize(i);
-	
-	// 'j' is Earth Y axis (East) unit vector in body frame, orthogonal with 'k' and 'i'
-	Vector3f j;
-	vector_cross(k, i, j);
-	
-	float head = atan2(mag[1], mag[0]) * 180 / 3.14;
-	
-	// Fill rotation matrix
-	Dcmf R;
-	matrix_set_row(&R, &i, 0);	
-	matrix_set_row(&R, &j, 1);
-	matrix_set_row(&R, &k, 2);
+	copter.orientation.quat.w = q[0];
+	copter.orientation.quat.x = q[1];
+	copter.orientation.quat.y = q[2];
+	copter.orientation.quat.z = q[3];
 }
 
-void SimpleUpdateIMU(float ax, float ay, float az, float gx, float gy, float gz)
+void complementary_filter(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
 	
-	if (sqrt((ax*ax) + (ay*ay) + (az*az)) > 12 || sqrt((gx*gx) + (gy*gy) + (gz*gz)) > 0.1 ||
-		sqrt((ax*ax) + (ay*ay) + (az*az)) < -12 || sqrt((gx*gx) + (gy*gy) + (gz*gz)) < -0.1)
+	if (inited == 0)
+	{
+		rm[0][0] = 1.0f;
+		rm[1][1] = 1.0f;
+		rm[2][2] = 1.0f;
+		
+		inited = 1;
 		return;
-	
-	static uint8_t is_init = 0;
-	static float gyr_pitch = 0, gyr_roll = 0;
-	
-  //Gyro angle calculations
-  //0.0000611 = 1 / (250Hz / 65.5)
-  gyr_pitch += gx * 0.00611;                       //Calculate the traveled pitch angle and add this to the angle_pitch variable
-  gyr_roll += gy * 0.00611;                        //Calculate the traveled roll angle and add this to the angle_roll variable
-  
-  //0.000001066 = 0.0000611 * (3.142(PI) / 180degr) The Arduino sin function is in radians
-  gyr_pitch += gyr_roll * sin(gz * M_PI / 180);                     //If the IMU has yawed transfer the roll angle to the pitch angel
-  gyr_roll -= gyr_pitch * sin(gz * M_PI / 180);                     //If the IMU has yawed transfer the pitch angle to the roll angel
-  
-  //Accelerometer angle calculations
-  float a_total = sqrt((ax*ax) + (ay*ay) + (az*az));   //Calculate the total accelerometer vector
-  //57.296 = 1 / (3.142 / 180) The Arduino asin function is in radians
-  float pitch_acc = asin((float)ay / a_total) * (1 / (M_PI / 180));         //Calculate the pitch angle
-  float roll_acc = asin((float)ax / a_total) * (-1 / (M_PI / 180));          //Calculate the roll angle
-  
-  //Place the MPU-6050 spirit level and note the values in the following two lines for calibration
-  pitch_acc -= 0.0;                                                //Accelerometer calibration value for pitch
-  roll_acc -= 0.0;                                                 //Accelerometer calibration value for roll
-
-  if(is_init) {
-		                                                 //If the IMU is already started
-    gyr_pitch = gyr_pitch * 0.9 + pitch_acc * 0.1;           //Correct the drift of the gyro pitch angle with the accelerometer pitch angle
-    gyr_roll = gyr_roll * 0.9 + roll_acc * 0.1;              //Correct the drift of the gyro roll angle with the accelerometer roll angle
-	}
-	else {
-		                                                                //At first start
-	  gyr_pitch = pitch_acc;                                         //Set the gyro pitch angle equal to the accelerometer pitch angle 
-	  gyr_roll = roll_acc;                                           //Set the gyro roll angle equal to the accelerometer roll angle 
-	  is_init = 1;                                              //Set the IMU started flag
 	}
 	
+	Vector3f acc = { ax, ay, az };
+	Vector3f gyr = { gx, gy, gz };
+	Vector3f mag = { mx, my, mz };
+	
+	Dcmf rmAcc, rmGyr, rmComp;
+	Quaternion qAcc, qGyr, qComp;
+	
+	handleAccelData(acc, mag, rmAcc);
+	handleGyroData(gyr, 5, rmGyr);
+	
+	rmComp[0][0] = rm[0][0];
+	rmComp[0][1] = rm[0][1];
+	rmComp[0][2] = rm[0][2];
+	rmComp[1][0] = rm[1][0];
+	rmComp[1][1] = rm[1][1];
+	rmComp[1][2] = rm[1][2];
+	rmComp[2][0] = rm[2][0];
+	rmComp[2][1] = rm[2][1];
+	rmComp[2][2] = rm[2][2];
+		
+	getQuaternion(rmAcc, qAcc);
+	getQuaternion(rmGyr, qGyr);
+	getQuaternion(rmComp, qComp);
+    
+	float Beta = 2.5f;
+	Quaternion result, r1;
+	slerp(qComp, qGyr, Beta * 0.01, result);
+	slerp(result, qAcc, Beta * 0.01, r1);
+	
+	copter.orientation.quat.w = r1[0];
+	copter.orientation.quat.x = r1[1];
+	copter.orientation.quat.y = r1[2];
+	copter.orientation.quat.z = r1[3];
+    
+	getRotationMatrix(r1, rm);
+}
 
-	//To dampen the pitch and roll angles a complementary filter is used
-	copter.orientation.euler.pitch = copter.orientation.euler.pitch * 0.9 + gyr_pitch * 0.1;      //Take 90% of the output pitch value and add 10% of the raw pitch value
-	copter.orientation.euler.roll = copter.orientation.euler.roll * 0.9 + gyr_roll * 0.1;         //Take 90% of the output roll value and add 10% of the raw roll value       
+
+void handleAccelData(Vector3f acc, Vector3f mag, Dcmf result) {    
+	float ax = acc[0];
+	float ay = acc[1];
+	float az = acc[2];
+    
+	float ex = mag[0];
+	float ey = mag[1];
+	float ez = mag[2];
+    
+	float hx = ey * az - ez * ay;
+	float hy = ez * ax - ex * az;
+	float hz = ex * ay - ey * ax;
+    
+	float invh = 1 / sqrt(hx * hx + hy * hy + hz * hz);
+	hx *= invh;
+	hy *= invh;
+	hz *= invh;
+    
+	float inva = 1 / sqrt(ax * ax + ay * ay + az * az);
+	ax *= inva;
+	ay *= inva;
+	az *= inva;
+    
+	float mx = ay * hz - az * hy;
+	float my = az * hx - ax * hz;
+	float mz = ax * hy - ay * hx;
+    
+	result[0][0] = hx;
+	result[0][1] = hy;
+	result[0][2] = hz;
+	result[1][0] = mx;
+	result[1][1] = my;
+	result[1][2] = mz;
+	result[2][0] = ax;
+	result[2][1] = ay;
+	result[2][2] = az;
+}
+
+void handleGyroData(Vector3f gyr, float t, Dcmf result) {
+	gyr[0] *= 0.001 * t;
+	gyr[1] *= 0.001 * t;
+	gyr[2] *= 0.001 * t;
+    
+	Dcmf rot;
+	rot[0][0] = 1;
+	rot[0][1] = -gyr[2];
+	rot[0][2] = gyr[1];
+	rot[1][0] = gyr[2];
+	rot[1][1] = 1;
+	rot[1][2] = -gyr[0];
+	rot[2][0] = -gyr[1];
+	rot[2][1] = gyr[0];
+	rot[2][2] = 1;
+	
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			float temp = 0;
+			for (int k = 0; k < 3; k++) {
+				temp += rm[i][k] * rot[k][j];
+			}
+			result[i][j] = temp;
+		}
+	}
+	rm[0][0] = result[0][0];
+	rm[0][1] = result[0][1];
+	rm[0][2] = result[0][2];  
+	rm[1][0] = result[1][0];
+	rm[1][1] = result[1][1];
+	rm[1][2] = result[1][2];  
+	rm[2][0] = result[2][0];
+	rm[2][1] = result[2][1];
+	rm[2][2] = result[2][2];    
 }
 
 void MadgwickAHRSupdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz) {
@@ -417,26 +518,22 @@ void MadgwickAHRSupdateIMU(float ax, float ay, float az, float gx, float gy, flo
 }
 
 void toEuler() {
-	float q1 = copter.orientation.quat.w, q2 = copter.orientation.quat.x, q3 = copter.orientation.quat.y, q4 = copter.orientation.quat.z;
-	float test = q2*q3 + q4*q1;
-	if (test > 0.499) {
-		copter.orientation.euler.yaw = 2 * atan2(q2, q1) * 180 / M_PI;
-		copter.orientation.euler.pitch = M_PI / 2 * 180 / M_PI;
-		copter.orientation.euler.roll = 0;
-		return;
-	}
-	if (test < -0.499) {
-		copter.orientation.euler.yaw = -2 * atan2(q2, q1) * 180 / M_PI;
-		copter.orientation.euler.pitch = -M_PI / 2 * 180 / M_PI;
-		copter.orientation.euler.roll = 0;
-		return;
-	}
-	float sqx = q2*q2;
-	float sqy = q3*q3;
-	float sqz = q4*q4;
-	copter.orientation.euler.yaw = atan2(2*q3*q1 - 2*q2*q4, 1 - 2*sqy - 2*sqz) * 180 / M_PI;
-	copter.orientation.euler.pitch = asin(2*test) * 180 / M_PI;
-	copter.orientation.euler.roll = atan2(2*q2*q1 - 2*q3*q4, 1 - 2*sqx - 2*sqz) * 180 / M_PI;
+	// roll (x-axis rotation)
+	float sinr_cosp = 2 * (copter.orientation.quat.w * copter.orientation.quat.x + copter.orientation.quat.y * copter.orientation.quat.z);
+	float cosr_cosp = 1 - 2 * (copter.orientation.quat.x * copter.orientation.quat.x + copter.orientation.quat.y * copter.orientation.quat.y);
+	copter.orientation.euler.roll = atan2(sinr_cosp, cosr_cosp) * 180 / M_PI;
+
+	// pitch (y-axis rotation)
+	float sinp = 2 * (copter.orientation.quat.w * copter.orientation.quat.y - copter.orientation.quat.z * copter.orientation.quat.x);
+	if (sinp >= 1 || sinp <= -1)
+		copter.orientation.euler.pitch = copysign(M_PI / 2, sinp) * 180 / M_PI;  // use 90 degrees if out of range
+	else
+	    copter.orientation.euler.pitch = asin(sinp) * 180 / M_PI;
+
+	// yaw (z-axis rotation)
+	float siny_cosp = 2 * (copter.orientation.quat.w * copter.orientation.quat.z + copter.orientation.quat.x * copter.orientation.quat.y);
+	float cosy_cosp = 1 - 2 * (copter.orientation.quat.y * copter.orientation.quat.y + copter.orientation.quat.z * copter.orientation.quat.z);
+	copter.orientation.euler.yaw = atan2(siny_cosp, cosy_cosp) * 180 / M_PI;
 }
 
 
