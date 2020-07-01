@@ -42,10 +42,17 @@ void bt_message_send()
 {
 	uint16_t msg[15] = {
 		9,
+		(int16_t)(copter.orientation.euler.yaw * 100),
 		(int16_t)(copter.orientation.euler.pitch * 100),
 		(int16_t)(copter.orientation.euler.roll * 100),
-		(int16_t)(copter.orientation.euler.yaw * 100),
 	};
+	
+//	uint16_t msg[15] = {
+//		9,
+//		(int16_t)(copter.orientation.quat.w * 100),
+//		(int16_t)(copter.orientation.quat.x * 100),
+//		(int16_t)(copter.orientation.quat.y * 100),
+//	};
 	
 	HAL_UART_Transmit(message.huart, (uint8_t *)msg, 30, 1000);
 }
