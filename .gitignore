@@ -62,7 +62,6 @@ stm32.xml
 .settings
 .cproject
 .project
-Makefile
 Makefile.old
 
 
