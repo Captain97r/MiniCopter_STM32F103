@@ -5,7 +5,7 @@
 #include "battery.h"
 #include "copter.h"
 #include "IMU.h"
-#include "bt_msg_handler.h"
+#include "radio_handler.h"
 
 #define ADC_HANLING_INTERVAL_MS			1000
 #define BT_MSG_SEND_INTERVAL_MS			100

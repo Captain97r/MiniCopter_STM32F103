@@ -42,17 +42,17 @@
 #include "adc.h"
 #include "dma.h"
 #include "i2c.h"
+#include "spi.h"
 #include "tim.h"
-#include "usart.h"
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
 
 #include "MPU9250.h"
 #include "BMP280.h"
-#include "HC-06.h"
+#include "nRF24L01.h"
 #include "battery.h"
-#include "bt_msg_handler.h"
+#include "radio_handler.h"
 #include "motor.h"
 #include "copter.h"
 #include "math.h"
@@ -71,7 +71,7 @@
 
 extern battery_t battery;
 
-extern bt_message_t message;
+//extern bt_message_t message;
 
 extern copter_t copter;
 
@@ -101,7 +101,6 @@ void i2c_scan(I2C_HandleTypeDef *hi2c, uint8_t* addr)
 		}
 	}
 }
-
 /* USER CODE END 0 */
 
 /**
@@ -111,48 +110,59 @@ void i2c_scan(I2C_HandleTypeDef *hi2c, uint8_t* addr)
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
+	/* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
+	/* USER CODE END 1 */
 
-  /* MCU Configuration----------------------------------------------------------*/
+	/* MCU Configuration----------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
 
-  /* USER CODE BEGIN Init */
+	/* USER CODE BEGIN Init */
 
-  /* USER CODE END Init */
+	/* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
+	/* Configure the system clock */
+	SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
+	/* USER CODE BEGIN SysInit */
 
-  /* USER CODE END SysInit */
+	/* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_ADC1_Init();
-  MX_I2C1_Init();
-  MX_TIM1_Init();
-  MX_USART1_UART_Init();
-  MX_TIM2_Init();
-  /* USER CODE BEGIN 2 */
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_DMA_Init();
+	MX_ADC1_Init();
+	MX_TIM1_Init();
+	MX_TIM2_Init();
+	MX_I2C2_Init();
+	MX_SPI1_Init();
+	MX_TIM4_Init();
+	/* USER CODE BEGIN 2 */
 
 	// Sensors init
 	//     MPU9250
-	HAL_GPIO_WritePin(AD0_GPIO_Port, AD0_Pin, GPIO_PIN_RESET);
 	HAL_Delay(50);
+	
+	HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
+	
+	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
+	htim4.Instance->CCR1 = 10;
+	htim4.Instance->CCR2 = 10;
+	htim4.Instance->CCR3 = 10;
 	
 	
 	uint8_t addr[10] = { 0 };
-    i2c_scan(&hi2c1, addr);
+	i2c_scan(&hi2c2, addr);
 	
 	MPU9250_init_t mpu9250_init_s = 
 	{ 
-		.hi2c = &hi2c1,
+		.hi2c = &hi2c2,
 		.accel_scale = AFS_2G,
 		.gyro_scale = GFS_250DPS,
 		.mag_scale = MFS_16BITS,
@@ -168,12 +178,12 @@ int main(void)
 	
 	
 	//save_calibration_to_flash();
-	load_calibration_from_flash();
+	//load_calibration_from_flash();
 	
 	//     BMP280
 	BMP280_init_t bmp280_init = 
 	{ 
-		.hi2c = &hi2c1,
+		.hi2c = &hi2c2,
 		.mode = BMP280_NORMAL_MODE,
 		.filter_coeff = BMP280_FILTER_COEF_16,
 		.ost = BMP280_TEMP_LOW_POWER,
@@ -183,10 +193,8 @@ int main(void)
 	
 	ok = BMP280_init(&bmp280_init);
 	
-	
 	// BT connectivity init
-	message.huart = &huart1;
-	HAL_UART_Receive_DMA(&huart1, (uint8_t *)&message.buf, MESSAGE_BUFFER_SIZE);
+
 	
 	
 	// Motor Init
@@ -205,12 +213,40 @@ int main(void)
 	HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
 	
 	
+	// nRF24 radio init & config
+	nRF24_Init();
+	uint8_t nrf_pres = nRF24_Check();
+	uint8_t ADDR[] = { 'n', 'R', 'F', '2', '4' };
+	
+	nRF24_EnableAutoAck();
+	nRF24_SetRFChannel(120);
+	nRF24_SetDataRate(nRF24_DR_2Mbps);
+	nRF24_SetCRCScheme(nRF24_CRC_off);
+	nRF24_SetAddrWidth(5);
+	
+	nRF24_SetAddr(nRF24_PIPE1, ADDR);
+	nRF24_SetRXPipe(nRF24_PIPE1, nRF24_AA_ON, 32);
+	
+	nRF24_SetTXPower(nRF24_TXPWR_0dBm);
+	nRF24_SetOperationalMode(nRF24_MODE_RX);
+	nRF24_SetPowerMode(nRF24_PWR_UP);
+	
+	uint8_t ack_payload[32] = {0};
+	nRF24_WriteAckPayload(nRF24_PIPE1, ack_payload, 32);
+	nRF24_CE_H;  // start receiving
+	
+	
+	htim4.Instance->CCR2 = 0;
+	htim4.Instance->CCR3 = 0;
+	htim4.Instance->CCR1 = 11; 
+	
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
 
   /* USER CODE END WHILE */
 

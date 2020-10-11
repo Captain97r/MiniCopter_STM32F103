@@ -18,7 +18,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 			copter_handle_actuators();
 		}if (!(cnt % BT_MSG_SEND_INTERVAL_MS))
 		{
-			bt_message_send();
+			radio_message_send();
 		}
 		if (!(cnt % IMU_HANDLING_INTERVAL_MS))
 		{

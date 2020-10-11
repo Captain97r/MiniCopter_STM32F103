@@ -49,6 +49,13 @@
 
 /* Private define ------------------------------------------------------------*/
 
+#define nRF24_IRQ_Pin GPIO_PIN_2
+#define nRF24_IRQ_GPIO_Port GPIOA
+#define nRF24_IRQ_EXTI_IRQn EXTI2_IRQn
+#define nRF24_CE_Pin GPIO_PIN_3
+#define nRF24_CE_GPIO_Port GPIOA
+#define nRF24_CSN_Pin GPIO_PIN_4
+#define nRF24_CSN_GPIO_Port GPIOA
 #define VBAT_Pin GPIO_PIN_0
 #define VBAT_GPIO_Port GPIOB
 #define MOTOR1_PWM_Pin GPIO_PIN_8
@@ -59,14 +66,12 @@
 #define MOTOR3_PWM_GPIO_Port GPIOA
 #define MOTOR4_PWM_Pin GPIO_PIN_11
 #define MOTOR4_PWM_GPIO_Port GPIOA
-#define FSYNC_Pin GPIO_PIN_4
-#define FSYNC_GPIO_Port GPIOB
-#define AD0_Pin GPIO_PIN_5
-#define AD0_GPIO_Port GPIOB
-#define UART_TX_Pin GPIO_PIN_6
-#define UART_TX_GPIO_Port GPIOB
-#define UART_RX_Pin GPIO_PIN_7
-#define UART_RX_GPIO_Port GPIOB
+#define LED_B_Pin GPIO_PIN_6
+#define LED_B_GPIO_Port GPIOB
+#define LED_R_Pin GPIO_PIN_7
+#define LED_R_GPIO_Port GPIOB
+#define LED_G_Pin GPIO_PIN_8
+#define LED_G_GPIO_Port GPIOB
 
 /* ########################## Assert Selection ############################## */
 /**
